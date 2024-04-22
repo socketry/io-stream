@@ -4,5 +4,5 @@
 # Copyright, 2023-2024, by Samuel Williams.
 
 module IO::Stream
-	VERSION = "0.0.1"
+	VERSION = "0.1.0"
 end
