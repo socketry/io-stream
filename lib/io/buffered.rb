@@ -19,8 +19,6 @@ require 'socket'
 
 unless BasicSocket.method_defined?(:buffered?)
 	class BasicSocket
-		# Is it likely that the socket is still connected?
-		# May return false positive, but won't return false negative.
 		def buffered?
 			return false unless super
 			

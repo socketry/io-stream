@@ -201,6 +201,8 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		it "should flush underlying data when it exceeds block size" do
 			expect(server.io).to receive(:write).once
 			
+			server.block_size = 8
+			
 			server.block_size.times do
 				server.write("!")
 			end

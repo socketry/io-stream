@@ -66,9 +66,18 @@ module IO::Stream
 		# Reads data from the underlying stream as efficiently as possible.
 		def sysread(size, buffer)
 			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
-			@io.sysread(size, buffer)
-		rescue EOFError
-			return false
+			while true
+				result = @io.read_nonblock(size, buffer, exception: false)
+				
+				case result
+				when :wait_readable
+					@io.wait_readable
+				when :wait_writable
+					@io.wait_writable
+				else
+					return result
+				end
+			end
 		end
 	end
 end

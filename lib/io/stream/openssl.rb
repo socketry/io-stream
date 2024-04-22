@@ -14,6 +14,18 @@ module OpenSSL
 					self.stop
 				end
 			end
+			
+			unless method_defined?(:wait_readable)
+				def wait_readable(...)
+					to_io.wait_readable(...)
+				end
+			end
+			
+			unless method_defined?(:wait_writable)
+				def wait_writable(...)
+					to_io.wait_writable(...)
+				end
+			end
 		end
 	end
 end
