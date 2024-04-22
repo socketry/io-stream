@@ -37,3 +37,11 @@ describe TCPSocket do
 		expect(client).not.to be(:buffered?)
 	end
 end
+
+describe StringIO do
+	let(:io) {StringIO.new}
+	
+	it "should not be buffered by default" do
+		expect(io).not.to be(:buffered?)
+	end
+end
