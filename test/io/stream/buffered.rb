@@ -32,6 +32,22 @@ ABufferedStream = Sus::Shared("a buffered stream") do
 		expect(reader.read(13)).to be == "Hello, World!"
 	end
 	
+	describe '#flush' do
+		it "should not call write if write buffer is empty" do
+			expect(writer.io).not.to receive(:write)
+			
+			writer.flush
+		end
+
+		it "should flush underlying data when it exceeds block size" do
+			expect(writer.io).to receive(:write).once
+			
+			writer.block_size.times do
+				writer.write("!")
+			end
+		end
+	end
+	
 	with '#eof?' do
 		it "should return true when there is no data available" do
 			writer.close
@@ -99,6 +115,11 @@ describe "IO.pipe" do
 	let(:reader) {IO::Stream::Buffered.wrap(pipe[0])}
 	let(:writer) {IO::Stream::Buffered.wrap(pipe[1])}
 	
+	def after
+		pipe.each(&:close)
+		super
+	end
+	
 	it_behaves_like ABufferedStream
 end
 
@@ -107,10 +128,17 @@ describe "Socket.pair" do
 	let(:reader) {IO::Stream::Buffered.wrap(sockets[0])}
 	let(:writer) {IO::Stream::Buffered.wrap(sockets[1])}
 	
+	def after
+		sockets.each(&:close)
+		super
+	end
+	
 	it_behaves_like ABufferedStream
 end
 
 describe "OpenSSL::SSL::SSLSocket" do
+	include Sus::Fixtures::Async::ReactorContext
+	
 	include Sus::Fixtures::OpenSSL::VerifiedCertificateContext
 	include Sus::Fixtures::OpenSSL::ValidCertificateContext
 	
@@ -118,4 +146,24 @@ describe "OpenSSL::SSL::SSLSocket" do
 	
 	let(:reader) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
 	let(:writer) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
+	
+	def before
+		super
+		
+		# Closing the SSLSocket should also close the underlying IO:
+		reader.io.sync_close = true
+		writer.io.sync_close = true
+		
+		[
+			Async{writer.io.accept},
+			Async{reader.io.connect}
+		].each(&:wait)
+	end
+	
+	def after
+		sockets.each(&:close)
+		super
+	end
+	
+	it_behaves_like ABufferedStream
 end
