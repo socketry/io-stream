@@ -1,12 +1,21 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023, by Samuel Williams.
+# Copyright, 2023-2024, by Samuel Williams.
+
+require_relative 'string_buffer'
+
+require_relative '../buffered'
+require_relative '../readable'
 
 module IO::Stream
+	# The default block size for IO buffers. Defaults to 64KB (typical pipe buffer size).
+	BLOCK_SIZE = ENV.fetch('IO_STREAM_BLOCK_SIZE', 1024*64).to_i
+
+	# The maximum read size when appending to IO buffers. Defaults to 8MB.
+	MAXIMUM_READ_SIZE = ENV.fetch('IO_STREAM_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128).to_i
+	
 	class BufferedStream
-		BLOCK_SIZE = IO::BLOCK_SIZE
-		
 		def self.open(path, mode = "r+", **options)
 			stream = self.new(File.open(path, mode), **options)
 			
@@ -24,7 +33,7 @@ module IO::Stream
 				io.buffered = false
 			end
 			
-			self.new(**options)
+			self.new(io, **options)
 		end
 		
 		def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE)
@@ -36,12 +45,12 @@ module IO::Stream
 			@block_size = block_size
 			@maximum_read_size = maximum_read_size
 			
-			@read_buffer = Buffer.new
-			@write_buffer = Buffer.new
-			@drain_buffer = Buffer.new
+			@read_buffer = StringBuffer.new
+			@write_buffer = StringBuffer.new
+			@drain_buffer = StringBuffer.new
 			
 			# Used as destination buffer for underlying reads.
-			@input_buffer = Buffer.new
+			@input_buffer = StringBuffer.new
 		end
 		
 		attr :io
@@ -92,6 +101,7 @@ module IO::Stream
 			raise exception, "encountered eof while reading data"
 		end
 		
+		# This is a compatibility shim for existing code:
 		def readpartial(size = nil)
 			read_partial(size) or raise EOFError, "Encountered eof while reading data!"
 		end
@@ -148,7 +158,7 @@ module IO::Stream
 				@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 				
 				begin
-					@io.write(@drain_buffer)
+					@io.syswrite(@drain_buffer)
 				ensure
 					# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
 					@drain_buffer.clear
@@ -216,18 +226,19 @@ module IO::Stream
 			end
 		end
 		
-		# Returns true if the stream is at file which means there is no more data to be read.
+		# Determins if the stream has consumed all available data. May block if the stream is not readable.
+		# See {readable?} for a non-blocking alternative.
+		#
+		# @returns [Boolean] If the stream is at file which means there is no more data to be read.
 		def eof?
 			if !@read_buffer.empty?
 				return false
 			elsif @eof
 				return true
 			else
-				return @io.eof?
+				return !self.fill_read_buffer
 			end
 		end
-		
-		alias eof eof?
 		
 		def eof!
 			@read_buffer.clear
@@ -236,7 +247,32 @@ module IO::Stream
 			raise EOFError
 		end
 		
+		# Whether there is a chance that a read operation will succeed or not.
+		# @returns [Boolean] If the stream is readable, i.e. a `read` operation has a chance of success.
+		def readable?
+			# If we are at the end of the file, we can't read any more data:
+			if @eof
+				return false
+			end
+			
+			# If the read buffer is not empty, we can read more data:
+			if !@read_buffer.empty?
+				return true
+			end
+			
+			# If the underlying stream is readable, we can read more data:
+			return @io.readable?
+		end
+		
 		private
+		
+		# Reads data from the underlying stream as efficiently as possible.
+		def sysread(size, buffer)
+			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
+			@io.sysread(size, buffer)
+		rescue EOFError
+			return false
+		end
 		
 		# Fills the buffer from the underlying stream.
 		def fill_read_buffer(size = @block_size)
@@ -249,12 +285,12 @@ module IO::Stream
 			flush
 			
 			if @read_buffer.empty?
-				if @io.read_nonblock(size, @read_buffer, exception: false)
+				if sysread(size, @read_buffer)
 					# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 					return true
 				end
 			else
-				if chunk = @io.read_nonblock(size, @input_buffer, exception: false)
+				if chunk = sysread(size, @input_buffer)
 					@read_buffer << chunk
 					# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
 					
@@ -278,7 +314,7 @@ module IO::Stream
 			if size.nil? or size >= @read_buffer.bytesize
 				# Consume the entire read buffer:
 				result = @read_buffer
-				@read_buffer = Buffer.new
+				@read_buffer = StringBuffer.new
 			else
 				# This approach uses more memory.
 				# result = @read_buffer.slice!(0, size)

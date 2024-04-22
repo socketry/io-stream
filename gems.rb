@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023, by Samuel Williams.
+# Copyright, 2023-2024, by Samuel Williams.
 
 source 'https://rubygems.org'
 
@@ -20,4 +20,7 @@ group :test do
 	
 	gem "bake-test"
 	gem "bake-test-external"
+	
+	gem "sus-fixtures-async"
+	gem "sus-fixtures-openssl"
 end

@@ -6,7 +6,7 @@ Provide a buffered stream implementation for Ruby, independent of the underlying
 
 ## Usage
 
-Please see the [documentation](https://socketry.github.io/io-endpoint) for more information.
+Please see the [project documentation](https://socketry.github.io/io-stream) for more details.
 
 ## Contributing
 
