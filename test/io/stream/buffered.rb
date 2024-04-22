@@ -24,116 +24,216 @@ describe IO::Stream::Buffered do
 	end
 end
 
-ABufferedStream = Sus::Shared("a buffered stream") do
+AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 	it "should be able to read and write data" do
-		writer.write "Hello, World!"
-		writer.flush
+		server.write "Hello, World!"
+		server.flush
 		
-		expect(reader.read(13)).to be == "Hello, World!"
+		expect(client.read(13)).to be == "Hello, World!"
+	end
+	
+	describe '#read_until' do
+		it "can read a line" do
+			server.write("hello\nworld\n")
+			server.close
+			
+			expect(client.read_until("\n")).to be == 'hello'
+			expect(client.read_until("\n")).to be == 'world'
+			expect(client.read_until("\n")).to be_nil
+		end
+
+		with "with 1-byte block size" do
+			it "can read a line with a multi-byte pattern" do
+				server.write("hello\nworld\n")
+				server.close
+				
+				client.block_size = 1
+				
+				expect(client.read_until("\n")).to be == 'hello'
+				expect(client.read_until("\n")).to be == 'world'
+				expect(client.read_until("\n")).to be_nil
+			end
+		end
+	end
+	
+	describe '#read_partial' do
+		def before
+			super
+			
+			string = "Hello World!"
+			server.write(string * 2)
+			server.close
+		end
+		
+		it "should fill the buffer once" do
+			expect(client).to receive(:sysread).once
+			
+			expect(client.read_partial(12)).to be == "Hello World!"
+			expect(client.read_partial(12)).to be == "Hello World!"
+		end
+		
+		it "with a normal partial_read" do
+			expect(client.read_partial(1).encoding).to be == Encoding::BINARY
+		end
+		
+		it "with a zero-length partial_read" do
+			expect(client.read_partial(0).encoding).to be == Encoding::BINARY
+		end
 	end
 	
 	describe '#flush' do
 		it "should not call write if write buffer is empty" do
-			expect(writer.io).not.to receive(:write)
+			expect(server.io).not.to receive(:write)
 			
-			writer.flush
+			server.flush
 		end
 
 		it "should flush underlying data when it exceeds block size" do
-			expect(writer.io).to receive(:write).once
+			expect(server.io).to receive(:write).once
 			
-			writer.block_size.times do
-				writer.write("!")
+			server.block_size.times do
+				server.write("!")
 			end
 		end
 	end
 	
 	with '#eof?' do
 		it "should return true when there is no data available" do
-			writer.close
-			expect(reader.eof?).to be_truthy
+			server.close
+			expect(client.eof?).to be_truthy
 		end
 		
 		it "should return false when there is data available" do
-			writer.write "Hello, World!"
-			writer.flush
+			server.write "Hello, World!"
+			server.flush
 			
-			expect(reader.eof?).to be_falsey
+			expect(client.eof?).to be_falsey
+		end
+	end
+	
+	with '#eof!' do
+		it "should immediately raise EOFError" do
+			expect do
+				client.eof!
+			end.to raise_exception(EOFError)
+			
+			expect(client).to be(:eof?)
 		end
 	end
 	
 	with '#readable?' do
 		it "should return true when the stream might be open" do
-			expect(reader.readable?).to be_truthy
+			expect(client.readable?).to be_truthy
 		end
 		
 		it "should return true when there is data available" do
-			writer.write "Hello, World!"
-			writer.flush
+			server.write "Hello, World!"
+			server.flush
 			
-			expect(reader.readable?).to be_truthy
+			expect(client.readable?).to be_truthy
 		end
 		
 		it "should return false when the stream is known to be closed" do
-			writer.close
+			server.close
 			
-			expect(reader.readable?).to be_truthy
-			reader.read
-			expect(reader.readable?).to be_falsey
+			expect(client.readable?).to be_truthy
+			client.read
+			expect(client.readable?).to be_falsey
+		end
+	end
+	
+	with '#close_write' do
+		it "can close the write side of the stream" do
+			server.write("Hello World!")
+			
+			# We are done writing the request:
+			server.close_write
+			
+			expect(client.read).to be == "Hello World!"
+			expect(client.eof?).to be_truthy
 		end
 	end
 	
 	with '#close' do
 		it "should close the stream" do
-			writer.close
-			expect(reader.read).to be_nil
+			server.close
+			expect(client.read).to be_nil
 			
-			expect(writer.closed?).to be_truthy
-			expect(reader.closed?).to be_falsey
+			expect(server.closed?).to be_truthy
+			expect(client.closed?).to be_falsey
 		end
 		
-		it "writer should be idempotent" do
-			writer.close
-			writer.close
+		it "server should be idempotent" do
+			server.close
+			server.close
 			
-			expect(writer.closed?).to be_truthy
-			expect(reader.closed?).to be_falsey
+			expect(server.closed?).to be_truthy
+			expect(client.closed?).to be_falsey
 		end
 		
-		it "reader be idempotent" do
-			reader.close
-			reader.close
+		it "client be idempotent" do
+			client.close
+			client.close
 			
-			expect(reader.closed?).to be_truthy
-			expect(writer.closed?).to be_falsey
+			expect(client.closed?).to be_truthy
+			expect(server.closed?).to be_falsey
+		end
+		
+		it "should ignore write failures on close" do
+			server.write(".")
+			
+			# Close the underlying IO for whatever reason:
+			server.io.close
+			
+			# This should not raise an exception:
+			server.close
+		end
+	end
+end
+
+ABidirectionalStream = Sus::Shared("a bidirectional stream") do
+	with '#close_write' do
+		it "can close the write side of the stream" do
+			server.write("Hello World!")
+			server.close_write
+			
+			expect(client.read).to be == "Hello World!"
+			expect(client.eof?).to be_truthy
+			
+			client.write("Goodbye World!")
+			client.close_write
+			
+			expect(server.read).to be == "Goodbye World!"
+			expect(server.eof?).to be_truthy
 		end
 	end
 end
 
 describe "IO.pipe" do
 	let(:pipe) {IO.pipe}
-	let(:reader) {IO::Stream::Buffered.wrap(pipe[0])}
-	let(:writer) {IO::Stream::Buffered.wrap(pipe[1])}
+	let(:client) {IO::Stream::Buffered.wrap(pipe[0])}
+	let(:server) {IO::Stream::Buffered.wrap(pipe[1])}
 	
 	def after
 		pipe.each(&:close)
 		super
 	end
 	
-	it_behaves_like ABufferedStream
+	it_behaves_like AUnidirectionalStream
 end
 
 describe "Socket.pair" do
 	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
-	let(:reader) {IO::Stream::Buffered.wrap(sockets[0])}
-	let(:writer) {IO::Stream::Buffered.wrap(sockets[1])}
+	let(:client) {IO::Stream::Buffered.wrap(sockets[0])}
+	let(:server) {IO::Stream::Buffered.wrap(sockets[1])}
 	
 	def after
 		sockets.each(&:close)
 		super
 	end
 	
-	it_behaves_like ABufferedStream
+	it_behaves_like AUnidirectionalStream
+	it_behaves_like ABidirectionalStream
 end
 
 describe "OpenSSL::SSL::SSLSocket" do
@@ -144,19 +244,19 @@ describe "OpenSSL::SSL::SSLSocket" do
 	
 	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
 	
-	let(:reader) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
-	let(:writer) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
+	let(:client) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
+	let(:server) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
 	
 	def before
 		super
 		
 		# Closing the SSLSocket should also close the underlying IO:
-		reader.io.sync_close = true
-		writer.io.sync_close = true
+		client.io.sync_close = true
+		server.io.sync_close = true
 		
 		[
-			Async{writer.io.accept},
-			Async{reader.io.connect}
+			Async{server.io.accept},
+			Async{client.io.connect}
 		].each(&:wait)
 	end
 	
@@ -165,5 +265,6 @@ describe "OpenSSL::SSL::SSLSocket" do
 		super
 	end
 	
-	it_behaves_like ABufferedStream
+	it_behaves_like AUnidirectionalStream
+	it_behaves_like ABidirectionalStream
 end

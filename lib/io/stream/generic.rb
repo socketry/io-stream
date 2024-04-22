@@ -8,6 +8,8 @@ require_relative 'string_buffer'
 require_relative '../buffered'
 require_relative '../readable'
 
+require_relative 'openssl'
+
 module IO::Stream
 	# The default block size for IO buffers. Defaults to 64KB (typical pipe buffer size).
 	BLOCK_SIZE = ENV.fetch('IO_STREAM_BLOCK_SIZE', 1024*64).to_i
@@ -32,7 +34,7 @@ module IO::Stream
 			@input_buffer = StringBuffer.new
 		end
 		
-		attr :block_size
+		attr_accessor :block_size
 		
 		# Reads `size` bytes from the stream. If size is not specified, read until end of file.
 		def read(size = nil)
