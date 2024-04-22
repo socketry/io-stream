@@ -32,6 +32,105 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		expect(client.read(13)).to be == "Hello, World!"
 	end
 	
+	describe '#read' do
+		it "can read zero length" do
+			data = client.read(0)
+			
+			expect(data).to be == ""
+			expect(data.encoding).to be == Encoding::BINARY
+		end
+		
+		it "reads everything" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).twice
+			
+			expect(client.read).to be == "Hello World"
+			expect(client).to be(:eof?)
+		end
+
+		it "reads only the amount requested" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).once
+			
+			expect(client.read_partial(4)).to be == "Hell"
+			expect(client).not.to be(:eof?)
+			
+			expect(client.read_partial(20)).to be == "o World"
+		end
+	end
+	
+	describe '#peek' do
+		it "can peek at the read buffer" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).once
+			
+			expect(client.peek(4)).to be == "Hell"
+			expect(client.peek(4)).to be == "Hell"
+			
+			expect(client.read_partial).to be == "Hello World"
+		end
+		
+		it "peeks everything" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).twice
+			
+			expect(client.peek).to be == "Hello World"
+			expect(client.read).to be == "Hello World"
+			expect(client).to be(:eof?)
+		end
+		
+		it "peeks only the amount requested" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).twice
+			
+			expect(client.peek(4)).to be == "Hell"
+			expect(client.read_partial(4)).to be == "Hell"
+			expect(client).not.to be(:eof?)
+			
+			expect(client.peek(20)).to be == "o World"
+			expect(client.read_partial(20)).to be == "o World"
+			expect(client).to be(:eof?)
+		end
+
+		it "peeks everything when requested bytes is too large" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client).to receive(:sysread).twice
+			
+			expect(client.peek(400)).to be == "Hello World"
+			expect(client.read_partial(400)).to be == "Hello World"
+			expect(client).to be(:eof?)
+		end
+	end
+	
+	describe '#read_exactly' do
+		it "can read several bytes" do
+			server.write "Hello World"
+			server.close
+			
+			expect(client.read_exactly(4)).to be == 'Hell'
+		end
+		
+		it "can raise exception if io is eof" do
+			server.close
+			
+			expect do
+				client.read_exactly(4)
+			end.to raise_exception(EOFError)
+		end
+	end
+	
 	describe '#read_until' do
 		it "can read a line" do
 			server.write("hello\nworld\n")
@@ -78,6 +177,17 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		
 		it "with a zero-length partial_read" do
 			expect(client.read_partial(0).encoding).to be == Encoding::BINARY
+		end
+	end
+	
+	describe '#write' do
+		it "should read one line" do
+			expect(server.io).to receive(:write)
+			
+			server.puts "Hello World"
+			server.flush
+			
+			expect(client.gets).to be == "Hello World"
 		end
 	end
 	
@@ -187,6 +297,56 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			
 			# This should not raise an exception:
 			server.close
+			
+			expect(server).to be(:closed?)
+		end
+	end
+	
+	with '#drain_write_buffer' do
+		include Sus::Fixtures::Async::ReactorContext
+		
+		let(:buffer_size) {1024*6}
+		
+		it "can interleave calls to flush" do
+			writers = 2.times.map do |i|
+				reactor.async do
+					buffer = i.to_s * buffer_size
+					128.times do
+						server.write(buffer)
+						server.flush
+					end
+				end
+			end
+			
+			reader = reactor.async do
+				while data = client.read(buffer_size)
+					expect(data).to be == (data[0] * buffer_size)
+				end
+			end
+			
+			writers.each(&:wait)
+			server.close
+			
+			reader.wait
+		end
+		
+		it "handles write failures" do
+			client.close
+			
+			task = reactor.async do
+				server.write("Hello World")
+				server.flush
+			rescue Errno::EPIPE => error
+				error
+			end
+			
+			expect(task.wait).to be_a(Errno::EPIPE)
+			
+			write_buffer = server.instance_variable_get(:@write_buffer)
+			drain_buffer = server.instance_variable_get(:@drain_buffer)
+			
+			expect(write_buffer).to be(:empty?)
+			expect(drain_buffer).to be(:empty?)
 		end
 	end
 end
@@ -220,6 +380,24 @@ describe "IO.pipe" do
 	end
 	
 	it_behaves_like AUnidirectionalStream
+	
+	it "can close the writing end of the stream" do
+		server.write("Oh yes!")
+		server.close_write
+		
+		expect do
+			client.write("Oh no!")
+			client.flush
+		end.to raise_exception(IOError, message: be =~ /not opened for writing/)
+	end
+	
+	it "can close the reading end of the stream" do
+		client.close_read
+		
+		expect do
+			client.read
+		end.to raise_exception(IOError, message: be =~ /closed stream/)
+	end
 end
 
 describe "Socket.pair" do
