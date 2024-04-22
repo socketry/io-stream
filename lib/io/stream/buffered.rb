@@ -24,7 +24,15 @@ module IO::Stream
 				io.buffered = false
 			end
 			
-			self.new(io, **options)
+			stream = self.new(io, **options)
+			
+			return stream unless block_given?
+			
+			begin
+				yield stream
+			ensure
+				stream.close
+			end
 		end
 		
 		def initialize(io, ...)

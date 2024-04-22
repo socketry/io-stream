@@ -19,11 +19,16 @@ require 'socket'
 
 unless BasicSocket.method_defined?(:buffered?, false)
 	class BasicSocket
+		def ip_protocol_tcp?
+			local_address = self.local_address
+			
+			return (local_address.afamily == ::Socket::AF_INET || local_address.afamily == ::Socket::AF_INET6) && local_address.socktype == ::Socket::SOCK_STREAM
+		end
+		
 		def buffered?
 			return false unless super
 			
-			case self.local_address.protocol
-			when ::Socket::IPPROTO_TCP
+			if ip_protocol_tcp?
 				return !self.getsockopt(::Socket::IPPROTO_TCP, ::Socket::TCP_NODELAY).bool
 			else
 				return true
@@ -33,8 +38,7 @@ unless BasicSocket.method_defined?(:buffered?, false)
 		def buffered=(value)
 			super
 			
-			case self.local_address.socktype
-			when ::Socket::SOCK_STREAM
+			if ip_protocol_tcp?
 				# When buffered is set to true, TCP_NODELAY shold be disabled.
 				self.setsockopt(::Socket::IPPROTO_TCP, ::Socket::TCP_NODELAY, value ? 0 : 1)
 			end
