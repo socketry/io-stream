@@ -246,9 +246,9 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 		
 		it "should return false when the stream is known to be closed" do
+			expect(client.readable?).to be_truthy
 			server.close
 			
-			expect(client.readable?).to be_truthy
 			client.read
 			expect(client.readable?).to be_falsey
 		end
