@@ -15,32 +15,11 @@ module IO::Stream
 	# The maximum read size when appending to IO buffers. Defaults to 8MB.
 	MAXIMUM_READ_SIZE = ENV.fetch('IO_STREAM_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128).to_i
 	
-	class BufferedStream
-		def self.open(path, mode = "r+", **options)
-			stream = self.new(File.open(path, mode), **options)
-			
-			return stream unless block_given?
-			
-			begin
-				yield stream
-			ensure
-				stream.close
-			end
-		end
-		
-		def self.wrap(io, **options)
-			if io.respond_to?(:buffered=)
-				io.buffered = false
-			end
-			
-			self.new(io, **options)
-		end
-		
-		def initialize(io, block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE)
-			@io = io
+	class Generic
+		def initialize(block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE)
 			@eof = false
 			
-			@writing = Thread::Mutex.new
+			@writing = ::Thread::Mutex.new
 			
 			@block_size = block_size
 			@maximum_read_size = maximum_read_size
@@ -52,8 +31,6 @@ module IO::Stream
 			# Used as destination buffer for underlying reads.
 			@input_buffer = StringBuffer.new
 		end
-		
-		attr :io
 		
 		attr :block_size
 		
@@ -101,7 +78,7 @@ module IO::Stream
 			raise exception, "encountered eof while reading data"
 		end
 		
-		# This is a compatibility shim for existing code:
+		# This is a compatibility shim for existing code that uses `readpartial`.
 		def readpartial(size = nil)
 			read_partial(size) or raise EOFError, "Encountered eof while reading data!"
 		end
@@ -158,7 +135,7 @@ module IO::Stream
 				@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 				
 				begin
-					@io.syswrite(@drain_buffer)
+					syswrite(@drain_buffer)
 				ensure
 					# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
 					@drain_buffer.clear
@@ -195,34 +172,27 @@ module IO::Stream
 			flush
 		end
 		
-		def connected?
-			@io.connected?
-		end
-		
 		def closed?
-			@io.closed?
+			false
 		end
 		
 		def close_read
-			@io.close_read
 		end
 		
 		def close_write
 			flush
-		ensure
-			@io.close_write
 		end
 		
 		# Best effort to flush any unwritten data, and then close the underling IO.
 		def close
-			return if @io.closed?
+			return if closed?
 			
 			begin
 				flush
 			rescue
 				# We really can't do anything here unless we want #close to raise exceptions.
 			ensure
-				@io.close
+				sysclose
 			end
 		end
 		
@@ -261,18 +231,25 @@ module IO::Stream
 			end
 			
 			# If the underlying stream is readable, we can read more data:
-			return @io.readable?
+			return !closed?
 		end
 		
-		private
+		protected
+		
+		def sysclose
+			raise NotImplementedError
+		end
+		
+		def syswrite(buffer)
+			raise NotImplementedError
+		end
 		
 		# Reads data from the underlying stream as efficiently as possible.
 		def sysread(size, buffer)
-			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
-			@io.sysread(size, buffer)
-		rescue EOFError
-			return false
+			raise NotImplementedError
 		end
+		
+		private
 		
 		# Fills the buffer from the underlying stream.
 		def fill_read_buffer(size = @block_size)

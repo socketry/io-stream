@@ -3,13 +3,13 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'io/stream/buffered_stream'
+require 'io/stream/buffered'
 
 require 'sus/fixtures/async/reactor_context'
 require 'sus/fixtures/openssl/verified_certificate_context'
 require 'sus/fixtures/openssl/valid_certificate_context'
 
-describe IO::Stream::BufferedStream do
+describe IO::Stream::Buffered do
 	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
 	describe "BLOCK_SIZE" do
 		it "should exist and be reasonable" do
@@ -96,16 +96,16 @@ end
 
 describe "IO.pipe" do
 	let(:pipe) {IO.pipe}
-	let(:reader) {IO::Stream::BufferedStream.wrap(pipe[0])}
-	let(:writer) {IO::Stream::BufferedStream.wrap(pipe[1])}
+	let(:reader) {IO::Stream::Buffered.wrap(pipe[0])}
+	let(:writer) {IO::Stream::Buffered.wrap(pipe[1])}
 	
 	it_behaves_like ABufferedStream
 end
 
 describe "Socket.pair" do
 	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
-	let(:reader) {IO::Stream::BufferedStream.wrap(sockets[0])}
-	let(:writer) {IO::Stream::BufferedStream.wrap(sockets[1])}
+	let(:reader) {IO::Stream::Buffered.wrap(sockets[0])}
+	let(:writer) {IO::Stream::Buffered.wrap(sockets[1])}
 	
 	it_behaves_like ABufferedStream
 end
@@ -116,6 +116,6 @@ describe "OpenSSL::SSL::SSLSocket" do
 	
 	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
 	
-	let(:reader) {IO::Stream::BufferedStream.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
-	let(:writer) {IO::Stream::BufferedStream.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
+	let(:reader) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
+	let(:writer) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
 end
