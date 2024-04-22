@@ -1,3 +1,8 @@
+# frozen_string_literal: true
+
+# Released under the MIT License.
+# Copyright, 2023, by Samuel Williams.
+
 module IO::Stream
 	class BufferedStream
 		BLOCK_SIZE = IO::BLOCK_SIZE
@@ -26,7 +31,7 @@ module IO::Stream
 			@io = io
 			@eof = false
 			
-			@writing = Async::Semaphore.new(1)
+			@writing = Thread::Mutex.new
 			
 			@block_size = block_size
 			@maximum_read_size = maximum_read_size
@@ -138,7 +143,7 @@ module IO::Stream
 		def flush
 			return if @write_buffer.empty?
 			
-			@writing.acquire do
+			@writing.synchronize do
 				# Flip the write buffer and drain buffer:
 				@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
 				

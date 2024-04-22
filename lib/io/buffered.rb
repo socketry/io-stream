@@ -1,6 +1,7 @@
+# frozen_string_literal: true
 
-require 'socket'
-require 'stringio'
+# Released under the MIT License.
+# Copyright, 2023, by Samuel Williams.
 
 unless IO.method_defined?(:buffered?)
 	class IO
@@ -13,6 +14,8 @@ unless IO.method_defined?(:buffered?)
 		end
 	end
 end
+
+require 'socket'
 
 unless BasicSocket.method_defined?(:buffered?)
 	class BasicSocket
@@ -44,6 +47,8 @@ unless BasicSocket.method_defined?(:buffered?)
 		end
 	end
 end
+
+require 'stringio'
 
 unless StringIO.method_defined?(:buffered?)
 	class StringIO

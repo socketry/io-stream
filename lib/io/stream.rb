@@ -1,3 +1,7 @@
+# frozen_string_literal: true
+
+# Released under the MIT License.
+# Copyright, 2023, by Samuel Williams.
 
 module IO::Stream
 	# The default block size for IO buffers. Defaults to 64KB (typical pipe buffer size).
