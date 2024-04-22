@@ -17,14 +17,14 @@ describe IO::Stream::StringBuffer do
 	end
 	
 	it "should append unicode strings" do
-		string_buffer << "Hello, World!".force_encoding(Encoding::UTF_8)
+		string_buffer << (+"Hello, World!").force_encoding(Encoding::UTF_8)
 		
 		expect(string_buffer).to be == "Hello, World!"
 		expect(string_buffer.encoding).to be == Encoding::BINARY
 	end
 	
 	it "should append binary strings" do
-		string_buffer << "Hello, World!".force_encoding(Encoding::BINARY)
+		string_buffer << (+"Hello, World!").force_encoding(Encoding::BINARY)
 		
 		expect(string_buffer).to be == "Hello, World!"
 		expect(string_buffer.encoding).to be == Encoding::BINARY
