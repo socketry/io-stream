@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023-2024, by Samuel Williams.
+# Copyright, 2024, by Samuel Williams.
 
 require_relative 'generic'
 
@@ -41,6 +41,11 @@ module IO::Stream
 			super(...)
 			
 			@io = io
+			if io.respond_to?(:timeout)
+				@timeout = io.timeout
+			else
+				@timeout = nil
+			end
 		end
 		
 		attr :io
@@ -78,9 +83,9 @@ module IO::Stream
 				
 				case result
 				when :wait_readable
-					@io.wait_readable
+					@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
 				when :wait_writable
-					@io.wait_writable
+					@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
 				else
 					if result == buffer.bytesize
 						return
@@ -99,9 +104,9 @@ module IO::Stream
 				
 				case result
 				when :wait_readable
-					@io.wait_readable
+					@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
 				when :wait_writable
-					@io.wait_writable
+					@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
 				else
 					return result
 				end

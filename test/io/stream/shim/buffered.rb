@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2023-2024, by Samuel Williams.
 
-require 'io/buffered'
+require 'io/stream/shim/buffered'
 
 describe IO do
 	let(:io) {IO.new(IO.sysopen('/dev/null', 'w'))}

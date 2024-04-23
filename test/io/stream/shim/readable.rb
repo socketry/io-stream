@@ -1,4 +1,6 @@
-require 'io/readable'
+# frozen_string_literal: true
+
+require 'io/stream/shim/readable'
 
 describe IO do
 	let(:io) {IO.new(IO.sysopen('/dev/null', 'w'))}

@@ -1,3 +1,8 @@
+# frozen_string_literal: true
+
+# Released under the MIT License.
+# Copyright, 2024, by Samuel Williams.
+
 require 'io/stream/buffered'
 require 'sus/fixtures/async/reactor_context'
 
@@ -18,12 +23,13 @@ describe "IO.pipe" do
 		
 		task = reactor.async do
 			while true
-				$stderr.puts "-> write"
+				# $stderr.puts "-> write"
 				server.write(message)
-				$stderr.puts "<- write"
+				# $stderr.puts "<- write"
 			end
 		end
 		
-		sleep 1
+		# Become a segfault:
+		# sleep 1
 	end
 end

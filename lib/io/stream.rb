@@ -4,7 +4,7 @@
 # Copyright, 2023-2024, by Samuel Williams.
 
 require_relative 'stream/version'
-require_relative 'stream/buffered_stream'
+require_relative 'stream/buffered'
 
 class IO
 	module Stream

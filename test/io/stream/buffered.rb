@@ -61,6 +61,14 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			
 			expect(client.read_partial(20)).to be == "o World"
 		end
+		
+		it "times out when reading" do
+			client.io.timeout = 0.001
+			
+			expect do
+				client.read(1)
+			end.to raise_exception(::IO::TimeoutError)
+		end
 	end
 	
 	describe '#peek' do
@@ -188,6 +196,16 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			server.flush
 			
 			expect(client.gets).to be == "Hello World"
+		end
+		
+		it "times out when writing" do
+			server.io.timeout = 0.001
+			
+			expect do
+				while true
+					server.write("Hello World")
+				end
+			end.to raise_exception(::IO::TimeoutError)
 		end
 	end
 	

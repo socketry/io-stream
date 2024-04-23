@@ -1,3 +1,8 @@
+# frozen_string_literal: true
+
+# Released under the MIT License.
+# Copyright, 2024, by Samuel Williams.
+
 require 'openssl'
 
 module OpenSSL
@@ -24,6 +29,18 @@ module OpenSSL
 			unless method_defined?(:wait_writable)
 				def wait_writable(...)
 					to_io.wait_writable(...)
+				end
+			end
+			
+			unless method_defined?(:timeout)
+				def timeout
+					to_io.timeout
+				end
+			end
+			
+			unless method_defined?(:timeout=)
+				def timeout=(value)
+					to_io.timeout = value
 				end
 			end
 		end
