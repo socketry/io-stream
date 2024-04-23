@@ -71,7 +71,7 @@ module IO::Stream
 		
 		def syswrite(buffer)
 			# This fails due to re-entrancy issues with a concurrent call to `sysclose`.
-			# @io.write(buffer)
+			# return @io.write(buffer)
 			
 			while true
 				result = @io.write_nonblock(buffer, exception: false)
