@@ -9,4 +9,12 @@ require_relative 'stream/buffered'
 class IO
 	module Stream
 	end
+	
+	def self.Stream(io)
+		if io.is_a?(Stream::Buffered)
+			io
+		else
+			Stream::Buffered.wrap(io)
+		end
+	end
 end
