@@ -182,7 +182,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 	
 	describe '#write' do
 		it "should read one line" do
-			expect(server.io).to receive(:write)
+			expect(server).to receive(:syswrite)
 			
 			server.puts "Hello World"
 			server.flush
@@ -193,13 +193,13 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 	
 	describe '#flush' do
 		it "should not call write if write buffer is empty" do
-			expect(server.io).not.to receive(:write)
+			expect(server).not.to receive(:syswrite)
 			
 			server.flush
 		end
 
 		it "should flush underlying data when it exceeds block size" do
-			expect(server.io).to receive(:write).once
+			expect(server).to receive(:syswrite).once
 			
 			server.block_size = 8
 			

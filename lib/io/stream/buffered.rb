@@ -70,7 +70,25 @@ module IO::Stream
 		end
 		
 		def syswrite(buffer)
-			@io.write(buffer)
+			# This fails due to re-entrancy issues with a concurrent call to `sysclose`.
+			# @io.write(buffer)
+			
+			while true
+				result = @io.write_nonblock(buffer, exception: false)
+				
+				case result
+				when :wait_readable
+					@io.wait_readable
+				when :wait_writable
+					@io.wait_writable
+				else
+					if result == buffer.bytesize
+						return
+					else
+						buffer = buffer.byteslice(result, buffer.bytesize)
+					end
+				end
+			end
 		end
 		
 		# Reads data from the underlying stream as efficiently as possible.
