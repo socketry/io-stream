@@ -22,6 +22,8 @@ module IO::Stream
 		def self.wrap(io, **options)
 			if io.respond_to?(:buffered=)
 				io.buffered = false
+			else
+				io.sync = true
 			end
 			
 			stream = self.new(io, **options)
