@@ -1,0 +1,39 @@
+PATH
+  remote: ../..
+  specs:
+    io-stream (0.4.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    async (2.16.0)
+      console (~> 1.26)
+      fiber-annotation
+      io-event (~> 1.6, >= 1.6.5)
+    console (1.27.0)
+      fiber-annotation
+      fiber-local (~> 1.1)
+      json
+    fiber-annotation (0.2.0)
+    fiber-local (1.1.0)
+      fiber-storage
+    fiber-storage (1.0.0)
+    io-endpoint (0.13.0)
+    io-event (1.6.5)
+    json (2.7.2)
+    localhost (1.3.1)
+    openssl (3.2.0)
+
+PLATFORMS
+  ruby
+  x86_64-linux
+
+DEPENDENCIES
+  async
+  io-endpoint
+  io-stream!
+  localhost
+  openssl
+
+BUNDLED WITH
+   2.5.16

@@ -22,7 +22,7 @@ module IO::Stream
 		def self.wrap(io, **options)
 			if io.respond_to?(:buffered=)
 				io.buffered = false
-			else
+			elsif io.respond_to?(:sync=)
 				io.sync = true
 			end
 			
