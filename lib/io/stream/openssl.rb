@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'openssl'
+require "openssl"
 
 module OpenSSL
 	module SSL

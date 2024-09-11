@@ -3,14 +3,14 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'io/stream/buffered'
-require 'async/clock'
+require "io/stream/buffered"
+require "async/clock"
 
 describe IO::Stream::Buffered do
 	with "performance (BLOCK_SIZE: #{IO::Stream::BLOCK_SIZE} MAXIMUM_READ_SIZE: #{IO::Stream::MAXIMUM_READ_SIZE})" do
 		let(:stream) {subject.open("/dev/zero")}
 		
-		def after
+		def after(error = nil)
 			stream.close
 			
 			super

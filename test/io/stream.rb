@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'io/stream'
+require "io/stream"
 
 describe IO::Stream do
 	it "can wrap an IO object" do

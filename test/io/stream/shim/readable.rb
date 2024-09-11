@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
-require 'io/stream/shim/readable'
+# Released under the MIT License.
+# Copyright, 2024, by Samuel Williams.
+
+require "io/stream/shim/readable"
 
 describe IO do
-	let(:io) {IO.new(IO.sysopen('/dev/null', 'w'))}
+	let(:io) {IO.new(IO.sysopen("/dev/null", "w"))}
 	
 	it "should be readable" do
 		expect(io).to be(:readable?)
@@ -22,11 +25,11 @@ describe TCPSocket do
 	attr :server
 	
 	def before
-		@server = TCPServer.new('localhost', 0)
-		@client = TCPSocket.new('localhost', @server.local_address.ip_port)
+		@server = TCPServer.new("localhost", 0)
+		@client = TCPSocket.new("localhost", @server.local_address.ip_port)
 	end
 	
-	def after
+	def after(error = nil)
 		@server.close
 		@client&.close
 		

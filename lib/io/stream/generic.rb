@@ -3,20 +3,20 @@
 # Released under the MIT License.
 # Copyright, 2023-2024, by Samuel Williams.
 
-require_relative 'string_buffer'
+require_relative "string_buffer"
 
-require_relative 'shim/buffered'
-require_relative 'shim/readable'
-require_relative 'shim/timeout'
+require_relative "shim/buffered"
+require_relative "shim/readable"
+require_relative "shim/timeout"
 
-require_relative 'openssl'
+require_relative "openssl"
 
 module IO::Stream
 	# The default block size for IO buffers. Defaults to 64KB (typical pipe buffer size).
-	BLOCK_SIZE = ENV.fetch('IO_STREAM_BLOCK_SIZE', 1024*64).to_i
+	BLOCK_SIZE = ENV.fetch("IO_STREAM_BLOCK_SIZE", 1024*64).to_i
 
 	# The maximum read size when appending to IO buffers. Defaults to 8MB.
-	MAXIMUM_READ_SIZE = ENV.fetch('IO_STREAM_MAXIMUM_READ_SIZE', BLOCK_SIZE * 128).to_i
+	MAXIMUM_READ_SIZE = ENV.fetch("IO_STREAM_MAXIMUM_READ_SIZE", BLOCK_SIZE * 128).to_i
 	
 	class Generic
 		def initialize(block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE)

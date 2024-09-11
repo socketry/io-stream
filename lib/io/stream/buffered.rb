@@ -3,7 +3,7 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require_relative 'generic'
+require_relative "generic"
 
 module IO::Stream
 	class Buffered < Generic

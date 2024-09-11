@@ -3,8 +3,8 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'io/stream/buffered'
-require 'sus/fixtures/async/reactor_context'
+require "io/stream/buffered"
+require "sus/fixtures/async/reactor_context"
 
 describe "IO.pipe" do
 	include Sus::Fixtures::Async::ReactorContext
@@ -13,7 +13,7 @@ describe "IO.pipe" do
 	let(:client) {IO::Stream::Buffered.wrap(pipe[0])}
 	let(:server) {IO::Stream::Buffered.wrap(pipe[1])}
 	
-	def after
+	def after(error = nil)
 		pipe.each(&:close)
 		super
 	end

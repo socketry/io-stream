@@ -15,7 +15,7 @@ unless IO.method_defined?(:buffered?, false)
 	end
 end
 
-require 'socket'
+require "socket"
 
 unless BasicSocket.method_defined?(:buffered?, false)
 	class BasicSocket
@@ -50,7 +50,7 @@ unless BasicSocket.method_defined?(:buffered?, false)
 	end
 end
 
-require 'stringio'
+require "stringio"
 
 unless StringIO.method_defined?(:buffered?, false)
 	class StringIO

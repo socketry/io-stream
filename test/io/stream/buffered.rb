@@ -3,11 +3,11 @@
 # Released under the MIT License.
 # Copyright, 2024, by Samuel Williams.
 
-require 'io/stream/buffered'
+require "io/stream/buffered"
 
-require 'sus/fixtures/async/reactor_context'
-require 'sus/fixtures/openssl/verified_certificate_context'
-require 'sus/fixtures/openssl/valid_certificate_context'
+require "sus/fixtures/async/reactor_context"
+require "sus/fixtures/openssl/verified_certificate_context"
+require "sus/fixtures/openssl/valid_certificate_context"
 
 describe IO::Stream::Buffered do
 	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
@@ -32,7 +32,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		expect(client.read(13)).to be == "Hello, World!"
 	end
 	
-	describe '#read' do
+	describe "#read" do
 		it "can read zero length" do
 			data = client.read(0)
 			
@@ -71,7 +71,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe '#peek' do
+	describe "#peek" do
 		it "can peek at the read buffer" do
 			server.write "Hello World"
 			server.close
@@ -122,12 +122,12 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe '#read_exactly' do
+	describe "#read_exactly" do
 		it "can read several bytes" do
 			server.write "Hello World"
 			server.close
 			
-			expect(client.read_exactly(4)).to be == 'Hell'
+			expect(client.read_exactly(4)).to be == "Hell"
 		end
 		
 		it "can raise exception if io is eof" do
@@ -139,13 +139,13 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe '#read_until' do
+	describe "#read_until" do
 		it "can read a line" do
 			server.write("hello\nworld\n")
 			server.close
 			
-			expect(client.read_until("\n")).to be == 'hello'
-			expect(client.read_until("\n")).to be == 'world'
+			expect(client.read_until("\n")).to be == "hello"
+			expect(client.read_until("\n")).to be == "world"
 			expect(client.read_until("\n")).to be_nil
 		end
 
@@ -156,14 +156,14 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 				
 				client.block_size = 1
 				
-				expect(client.read_until("\n")).to be == 'hello'
-				expect(client.read_until("\n")).to be == 'world'
+				expect(client.read_until("\n")).to be == "hello"
+				expect(client.read_until("\n")).to be == "world"
 				expect(client.read_until("\n")).to be_nil
 			end
 		end
 	end
 	
-	describe '#read_partial' do
+	describe "#read_partial" do
 		def before
 			super
 			
@@ -188,7 +188,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe '#write' do
+	describe "#write" do
 		it "should read one line" do
 			expect(server).to receive(:syswrite)
 			
@@ -209,7 +209,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe '#flush' do
+	describe "#flush" do
 		it "should not call write if write buffer is empty" do
 			expect(server).not.to receive(:syswrite)
 			
@@ -227,7 +227,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#eof?' do
+	with "#eof?" do
 		it "should return true when there is no data available" do
 			server.close
 			expect(client.eof?).to be_truthy
@@ -241,7 +241,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#eof!' do
+	with "#eof!" do
 		it "should immediately raise EOFError" do
 			expect do
 				client.eof!
@@ -251,7 +251,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#readable?' do
+	with "#readable?" do
 		it "should return true when the stream might be open" do
 			expect(client.readable?).to be_truthy
 		end
@@ -272,7 +272,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#close_write' do
+	with "#close_write" do
 		it "can close the write side of the stream" do
 			server.write("Hello World!")
 			
@@ -284,7 +284,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#close' do
+	with "#close" do
 		it "should close the stream" do
 			server.close
 			expect(client.read).to be_nil
@@ -322,7 +322,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	with '#drain_write_buffer' do
+	with "#drain_write_buffer" do
 		include Sus::Fixtures::Async::ReactorContext
 		
 		let(:buffer_size) {1024*6}
@@ -372,7 +372,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 end
 
 ABidirectionalStream = Sus::Shared("a bidirectional stream") do
-	with '#close_write' do
+	with "#close_write" do
 		it "can close the write side of the stream" do
 			server.write("Hello World!")
 			server.close_write
@@ -394,7 +394,7 @@ describe "IO.pipe" do
 	let(:client) {IO::Stream::Buffered.wrap(pipe[0])}
 	let(:server) {IO::Stream::Buffered.wrap(pipe[1])}
 	
-	def after
+	def after(error = nil)
 		pipe.each(&:close)
 		super
 	end
@@ -425,7 +425,7 @@ describe "Socket.pair" do
 	let(:client) {IO::Stream::Buffered.wrap(sockets[0])}
 	let(:server) {IO::Stream::Buffered.wrap(sockets[1])}
 	
-	def after
+	def after(error = nil)
 		sockets.each(&:close)
 		super
 	end
@@ -458,7 +458,7 @@ describe "OpenSSL::SSL::SSLSocket" do
 		].each(&:wait)
 	end
 	
-	def after
+	def after(error = nil)
 		sockets.each(&:close)
 		super
 	end

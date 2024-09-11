@@ -3,10 +3,10 @@
 # Released under the MIT License.
 # Copyright, 2023-2024, by Samuel Williams.
 
-require 'io/stream/shim/buffered'
+require "io/stream/shim/buffered"
 
 describe IO do
-	let(:io) {IO.new(IO.sysopen('/dev/null', 'w'))}
+	let(:io) {IO.new(IO.sysopen("/dev/null", "w"))}
 	
 	it "should be buffered by default" do
 		expect(io).to be(:buffered?)
@@ -20,13 +20,13 @@ describe IO do
 end
 
 describe TCPSocket do
-	let(:client) {@client = TCPSocket.new('localhost', @server.local_address.ip_port)}
+	let(:client) {@client = TCPSocket.new("localhost", @server.local_address.ip_port)}
 	
 	def before
-		@server = TCPServer.new('localhost', 0)
+		@server = TCPServer.new("localhost", 0)
 	end
 	
-	def after
+	def after(error = nil)
 		@server.close
 		@client&.close
 		
@@ -53,7 +53,7 @@ describe UNIXSocket do
 	let(:client) {sockets[0]}
 	let(:server) {sockets[1]}
 	
-	def after
+	def after(error = nil)
 		client.close
 		server.close
 		

@@ -12,7 +12,7 @@ class IO
 	end
 end
 
-require 'socket'
+require "socket"
 
 class BasicSocket
 	unless method_defined?(:readable?, false)
@@ -32,7 +32,7 @@ class BasicSocket
 	end
 end
 
-require 'stringio'
+require "stringio"
 
 class StringIO
 	unless method_defined?(:readable?, false)
@@ -42,7 +42,7 @@ class StringIO
 	end
 end
 
-require 'openssl'
+require "openssl"
 
 class OpenSSL::SSL::SSLSocket
 	unless method_defined?(:readable?, false)
