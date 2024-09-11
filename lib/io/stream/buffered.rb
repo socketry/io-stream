@@ -123,7 +123,7 @@ module IO::Stream
 				end
 			end
 		rescue Errno::EBADF
-			raise ::IOError
+			raise ::IOError, "stream closed"
 		end
 	end
 end
