@@ -74,8 +74,15 @@ module IO::Stream
 		
 		protected
 		
-		def sysclose
-			@io.close
+		if RUBY_VERSION >= "3.3.0"
+			def sysclose
+				# https://bugs.ruby-lang.org/issues/20723
+				Thread.new{@io.close}.join
+			end
+		else
+			def sysclose
+				@io.close
+			end
 		end
 		
 		def syswrite(buffer)

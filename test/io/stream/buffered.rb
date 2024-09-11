@@ -320,6 +320,40 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			
 			expect(server).to be(:closed?)
 		end
+		
+		it "can't read after closing" do
+			client.close
+			
+			expect do
+				client.read
+			end.to raise_exception(::IOError)
+		end
+		
+		it "can't write after closing" do
+			server.close
+			
+			expect do
+				server.write("Hello World")
+				server.flush
+			end.to raise_exception(::IOError)
+		end
+		
+		it "can close while reading from a different thread" do
+			reader = Thread.new do
+				Thread.current.report_on_exception = false
+				
+				client.read
+			end
+			
+			# Wait for the thread to start reading:
+			Thread.pass until reader.backtrace(0, 1).find{|line| line.include?("wait_readable")}
+			
+			client.close
+			
+			expect do
+				reader.join
+			end.to raise_exception(::IOError)
+		end
 	end
 	
 	with "#drain_write_buffer" do

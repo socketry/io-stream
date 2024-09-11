@@ -195,7 +195,7 @@ module IO::Stream
 			rescue
 				# We really can't do anything here unless we want #close to raise exceptions.
 			ensure
-				sysclose
+				self.sysclose
 			end
 		end
 		
