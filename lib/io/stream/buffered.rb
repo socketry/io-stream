@@ -122,6 +122,8 @@ module IO::Stream
 					return result
 				end
 			end
+		rescue Errno::EBADF
+			raise ::IOError
 		end
 	end
 end
