@@ -50,6 +50,10 @@ module IO::Stream
 		
 		attr :io
 		
+		def to_io
+			@io.to_io
+		end
+		
 		def closed?
 			@io.closed?
 		end
