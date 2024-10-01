@@ -1,0 +1,12 @@
+async-http:
+  url: https://github.com/socketry/async-http.git
+  command: bundle exec sus
+protocol-websocket:
+  url: https://github.com/socketry/protocol-websocket.git
+  command: bundle exec sus
+async-websocket:
+  url: https://github.com/socketry/async-websocket.git
+  command: bundle exec sus
+falcon:
+  url: https://github.com/socketry/falcon.git
+  command: bundle exec sus
