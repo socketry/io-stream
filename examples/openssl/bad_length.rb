@@ -1,14 +1,15 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require 'async'
-require 'openssl'
-require 'io/endpoint/ssl_endpoint'
-require 'io/stream'
-require 'localhost'
+require "async"
+require "openssl"
+require "io/endpoint/ssl_endpoint"
+require "io/stream"
+require "localhost"
 
 authority = Localhost::Authority.fetch
 
-endpoint = IO::Endpoint.tcp('localhost', 12345)
+endpoint = IO::Endpoint.tcp("localhost", 12345)
 server_endpoint = IO::Endpoint::SSLEndpoint.new(endpoint, ssl_context: authority.server_context)
 client_endpoint = IO::Endpoint::SSLEndpoint.new(endpoint, ssl_context: authority.client_context)
 
