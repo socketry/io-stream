@@ -10,10 +10,8 @@ describe IO::Stream::Buffered do
 	with "performance (BLOCK_SIZE: #{IO::Stream::BLOCK_SIZE} MAXIMUM_READ_SIZE: #{IO::Stream::MAXIMUM_READ_SIZE})" do
 		let(:stream) {subject.open("/dev/zero")}
 		
-		def after(error = nil)
+		after do
 			stream.close
-			
-			super
 		end
 		
 		it "can read data quickly" do
