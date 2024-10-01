@@ -397,10 +397,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(task.wait).to be_a(Errno::EPIPE)
 			
 			write_buffer = server.instance_variable_get(:@write_buffer)
-			drain_buffer = server.instance_variable_get(:@drain_buffer)
-			
 			expect(write_buffer).to be(:empty?)
-			expect(drain_buffer).to be(:empty?)
 		end
 	end
 end

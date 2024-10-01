@@ -29,7 +29,6 @@ module IO::Stream
 			
 			@read_buffer = StringBuffer.new
 			@write_buffer = StringBuffer.new
-			@drain_buffer = StringBuffer.new
 			
 			# Used as destination buffer for underlying reads.
 			@input_buffer = StringBuffer.new
@@ -129,20 +128,21 @@ module IO::Stream
 			read_until(separator, **options)
 		end
 		
+		private def drain(buffer)
+			begin
+				syswrite(buffer)
+			ensure
+				# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
+				buffer.clear
+			end
+		end
+		
 		# Flushes buffered data to the stream.
 		def flush
 			return if @write_buffer.empty?
 			
 			@writing.synchronize do
-				# Flip the write buffer and drain buffer:
-				@write_buffer, @drain_buffer = @drain_buffer, @write_buffer
-				
-				begin
-					syswrite(@drain_buffer)
-				ensure
-					# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
-					@drain_buffer.clear
-				end
+				self.drain(@write_buffer)
 			end
 		end
 		
@@ -150,11 +150,15 @@ module IO::Stream
 		# buffer is flushed to the underlying `io`.
 		# @param string the string to write to the buffer.
 		# @return the number of bytes appended to the buffer.
-		def write(string)
-			@write_buffer << string
-			
-			if @write_buffer.bytesize >= @block_size
-				flush
+		def write(string, flush: false)
+			@writing.synchronize do
+				@write_buffer << string
+				
+				flush |= @write_buffer.bytesize >= @block_size
+				
+				if flush
+					self.drain(@write_buffer)
+				end
 			end
 			
 			return string.bytesize
@@ -168,11 +172,15 @@ module IO::Stream
 		end
 		
 		def puts(*arguments, separator: $/)
-			arguments.each do |argument|
-				@write_buffer << argument << separator
-			end
+			return if arguments.empty?
 			
-			flush
+			@writing.synchronize do
+				arguments.each do |argument|
+					@write_buffer << argument << separator
+				end
+				
+				self.drain(@write_buffer)
+			end
 		end
 		
 		def closed?
@@ -266,13 +274,13 @@ module IO::Stream
 			
 			if @read_buffer.empty?
 				if sysread(size, @read_buffer)
-					# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
+					# Console.info(self, name: "read") {@read_buffer.inspect}
 					return true
 				end
 			else
 				if chunk = sysread(size, @input_buffer)
 					@read_buffer << chunk
-					# Console.logger.debug(self, name: "read") {@read_buffer.inspect}
+					# Console.info(self, name: "read") {@read_buffer.inspect}
 					
 					return true
 				end
