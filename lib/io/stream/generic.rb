@@ -154,7 +154,7 @@ module IO::Stream
 			@writing.synchronize do
 				@write_buffer << string
 				
-				flush |= @write_buffer.bytesize >= @block_size
+				flush |= (@write_buffer.bytesize >= @block_size)
 				
 				if flush
 					self.drain(@write_buffer)
