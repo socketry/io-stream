@@ -11,13 +11,13 @@ require "sus/fixtures/openssl/valid_certificate_context"
 
 describe IO::Stream::Buffered do
 	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
-	describe "BLOCK_SIZE" do
+	with "BLOCK_SIZE" do
 		it "should exist and be reasonable" do
 			expect(IO::Stream::BLOCK_SIZE).to be_within(1024...1024*128)
 		end
 	end
 	
-	describe "MAXIMUM_READ_SIZE" do
+	with "MAXIMUM_READ_SIZE" do
 		it "should exist and be reasonable" do
 			expect(IO::Stream::MAXIMUM_READ_SIZE).to be_within(1024*64..1024*64*512)
 		end
@@ -32,7 +32,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		expect(client.read(13)).to be == "Hello, World!"
 	end
 	
-	describe "#read" do
+	with "#read" do
 		it "can read zero length" do
 			data = client.read(0)
 			
@@ -71,7 +71,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#peek" do
+	with "#peek" do
 		it "can peek at the read buffer" do
 			server.write "Hello World"
 			server.close
@@ -122,7 +122,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#read_exactly" do
+	with "#read_exactly" do
 		it "can read several bytes" do
 			server.write "Hello World"
 			server.close
@@ -139,7 +139,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#read_until" do
+	with "#read_until" do
 		it "can read a line" do
 			server.write("hello\nworld\n")
 			server.close
@@ -163,7 +163,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#read_partial" do
+	with "#read_partial" do
 		def before
 			super
 			
@@ -188,7 +188,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#write" do
+	with "#write" do
 		it "should read one line" do
 			expect(server).to receive(:syswrite)
 			
@@ -209,7 +209,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
-	describe "#flush" do
+	with "#flush" do
 		it "should not call write if write buffer is empty" do
 			expect(server).not.to receive(:syswrite)
 			
