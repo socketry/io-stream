@@ -43,6 +43,18 @@ module OpenSSL
 					to_io.timeout = value
 				end
 			end
+			
+			unless method_defined?(:buffered?)
+				def buffered?
+					return to_io.buffered?
+				end
+			end
+			
+			unless method_defined?(:buffered=)
+				def buffered=(value)
+					to_io.buffered = value
+				end
+			end
 		end
 	end
 end
