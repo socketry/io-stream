@@ -32,6 +32,12 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		expect(client.read(13)).to be == "Hello, World!"
 	end
 	
+	with "#buffered?" do
+		it "should not be buffered" do
+			expect(client.io).not.to be(:buffered?)
+		end
+	end
+	
 	with "#read" do
 		it "can read zero length" do
 			data = client.read(0)
