@@ -148,8 +148,8 @@ module IO::Stream
 		
 		# Writes `string` to the buffer. When the buffer is full or #sync is true the
 		# buffer is flushed to the underlying `io`.
-		# @param string the string to write to the buffer.
-		# @return the number of bytes appended to the buffer.
+		# @parameter string [String] the string to write to the buffer.
+		# @returns [Integer] the number of bytes appended to the buffer.
 		def write(string, flush: false)
 			@writing.synchronize do
 				@write_buffer << string
@@ -292,7 +292,7 @@ module IO::Stream
 		end
 		
 		# Consumes at most `size` bytes from the buffer.
-		# @param size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
+		# @parameter size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
 		def consume_read_buffer(size = nil)
 			# If we are at eof, and the read buffer is empty, we can't consume anything.
 			return nil if @eof && @read_buffer.empty?
