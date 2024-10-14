@@ -154,7 +154,17 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client.read_until("\n")).to be == "world"
 			expect(client.read_until("\n")).to be_nil
 		end
-
+		
+		it "can read with a limit" do
+			server.write("hello\nworld\n")
+			server.close
+			
+			expect(client.read_until("\n", limit: 4)).to be_nil
+			expect(client.read_until("\n", limit: 5)).to be_nil
+			expect(client.read_until("\n", limit: 6)).to be == "hello"
+			expect(client.read_until("\n", limit: nil)).to be == "world"
+		end
+		
 		with "with 1-byte block size" do
 			it "can read a line with a multi-byte pattern" do
 				server.write("hello\nworld\n")
