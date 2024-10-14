@@ -18,6 +18,9 @@ module IO::Stream
 	# The maximum read size when appending to IO buffers. Defaults to 8MB.
 	MAXIMUM_READ_SIZE = ENV.fetch("IO_STREAM_MAXIMUM_READ_SIZE", BLOCK_SIZE * 128).to_i
 	
+	class LimitError < StandardError
+	end
+	
 	class Generic
 		def initialize(block_size: BLOCK_SIZE, maximum_read_size: MAXIMUM_READ_SIZE)
 			@eof = false
@@ -85,15 +88,10 @@ module IO::Stream
 			read_partial(size) or raise EOFError, "Encountered eof while reading data!"
 		end
 		
-		# Efficiently read data from the stream until encountering pattern.
-		# @parameter pattern [String] The pattern to match.
-		# @parameter offset [Integer] The offset to start searching from.
-		# @parameter limit [Integer] The maximum number of bytes to read, including the pattern (even if chomped).
-		# @returns [String | Nil] The contents of the stream up until the pattern, which is consumed but not returned.
-		def read_until(pattern, offset = 0, limit: nil, chomp: true)
+		private def index_of(pattern, offset, limit)
 			# We don't want to split on the pattern, so we subtract the size of the pattern.
 			split_offset = pattern.bytesize - 1
-			
+
 			until index = @read_buffer.index(pattern, offset)
 				offset = @read_buffer.bytesize - split_offset
 				
@@ -103,13 +101,24 @@ module IO::Stream
 				return nil unless fill_read_buffer
 			end
 			
-			return nil if limit and index >= limit
-			
-			@read_buffer.freeze
-			matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
-			@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
-			
-			return matched
+			return index
+		end
+		
+		# Efficiently read data from the stream until encountering pattern.
+		# @parameter pattern [String] The pattern to match.
+		# @parameter offset [Integer] The offset to start searching from.
+		# @parameter limit [Integer] The maximum number of bytes to read, including the pattern (even if chomped).
+		# @returns [String | Nil] The contents of the stream up until the pattern, which is consumed but not returned.
+		def read_until(pattern, offset = 0, limit: nil, chomp: true)
+			if index = index_of(pattern, offset, limit)
+				return nil if limit and index >= limit
+				
+				@read_buffer.freeze
+				matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
+				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
+				
+				return matched
+			end
 		end
 		
 		def peek(size = nil)
@@ -129,8 +138,45 @@ module IO::Stream
 			return @read_buffer
 		end
 		
-		def gets(separator = $/, **options)
-			read_until(separator, **options)
+		def gets(separator = $/, limit = nil, chomp: false)
+			# Compatibility with IO#gets:
+			if separator.is_a?(Integer)
+				limit = separator
+				separator = $/
+			end
+			
+			# We don't want to split in the middle of the separator, so we subtract the size of the separator from the start of the search:
+			split_offset = separator.bytesize - 1
+			
+			offset = 0
+			
+			until index = @read_buffer.index(separator, offset)
+				offset = @read_buffer.bytesize - split_offset
+				offset = 0 if offset < 0
+				
+				# If a limit was given, and the offset is beyond the limit, we should return up to the limit:
+				if limit and offset >= limit
+					# As we didn't find the separator, there is nothing to chomp either.
+					return consume_read_buffer(limit)
+				end
+				
+				# If we can't read any more data, we should return what we have:
+				return consume_read_buffer unless fill_read_buffer
+			end
+			
+			# If the index of the separator was beyond the limit:
+			if limit and index >= limit
+				# Return up to the limit:
+				return consume_read_buffer(limit)
+			end
+			
+			# Freeze the read buffer, as this enables us to use byteslice without generating a hidden copy:
+			@read_buffer.freeze
+			
+			line = @read_buffer.byteslice(0, index+(chomp ? 0 : separator.bytesize))
+			@read_buffer = @read_buffer.byteslice(index+separator.bytesize, @read_buffer.bytesize)
+			
+			return line
 		end
 		
 		private def drain(buffer)

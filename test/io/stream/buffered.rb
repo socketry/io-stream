@@ -179,6 +179,28 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
+	with "#gets" do
+		it "can read a line" do
+			server.write("hello\nworld\nremainder")
+			server.close
+			
+			expect(client.gets).to be == "hello\n"
+			expect(client.gets).to be == "world\n"
+			expect(client.gets).to be == "remainder"
+			expect(client.gets).to be_nil
+		end
+		
+		it "can read with a limit" do
+			server.write("hello\nworld\nremainder")
+			server.close
+			
+			expect(client.gets(4)).to be == "hell"
+			expect(client.gets(5)).to be == "o\n"
+			expect(client.gets(6)).to be == "world\n"
+			expect(client.gets).to be == "remainder"
+		end
+	end
+	
 	with "#read_partial" do
 		def before
 			super
@@ -211,7 +233,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			server.puts "Hello World"
 			server.flush
 			
-			expect(client.gets).to be == "Hello World"
+			expect(client.gets).to be == "Hello World\n"
 		end
 		
 		it "times out when writing" do
