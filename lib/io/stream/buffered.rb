@@ -74,7 +74,7 @@ module IO::Stream
 		
 		protected
 		
-		if RUBY_VERSION >= "3.3.0"
+		if RUBY_VERSION >= "3.3.0" && RUBY_VERSION <= "3.3.5"
 			def sysclose
 				# https://bugs.ruby-lang.org/issues/20723
 				Thread.new{@io.close}.join
