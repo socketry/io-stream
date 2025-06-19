@@ -10,6 +10,8 @@ module IO::Stream
 	MINIMUM_WRITE_SIZE = ENV.fetch("IO_STREAM_MINIMUM_WRITE_SIZE", BLOCK_SIZE).to_i
 	
 	# A module providing writable stream functionality.
+	#
+	# You must implement the `syswrite` method to write data to the underlying IO.
 	module Writable
 		def initialize(minimum_write_size: MINIMUM_WRITE_SIZE, **, &block)
 			@writing = ::Thread::Mutex.new

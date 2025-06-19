@@ -22,6 +22,8 @@ module IO::Stream
 	MAXIMUM_READ_SIZE = ENV.fetch("IO_STREAM_MAXIMUM_READ_SIZE", MINIMUM_READ_SIZE * 64).to_i
 	
 	# A module providing readable stream functionality.
+	#
+	# You must implement the `sysread` method to read data from the underlying IO.
 	module Readable
 		def initialize(minimum_read_size: MINIMUM_READ_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, block_size: nil, **, &block)
 			@done = false
