@@ -3,6 +3,7 @@
 ## Unreleased
 
   - On Ruby v3.3+, use `IO#write` directly instead of `IO#write_nonblock`, for better performance.
+  - Introduce support for `Readable#discard_until` method to discard data until a specific pattern is found.
 
 ## v0.7.0
 

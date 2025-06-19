@@ -116,17 +116,28 @@ module IO::Stream
 		# @parameter offset [Integer] The offset to start searching from.
 		# @parameter limit [Integer | Nil] The maximum number of bytes to read while searching.
 		# @returns [Integer | Nil] The index of the pattern, or nil if not found.
-		private def index_of(pattern, offset, limit)
+		private def index_of(pattern, offset, limit, discard = false)
 			# We don't want to split on the pattern, so we subtract the size of the pattern.
 			split_offset = pattern.bytesize - 1
-
+			
 			until index = @read_buffer.index(pattern, offset)
 				offset = @read_buffer.bytesize - split_offset
 				
 				offset = 0 if offset < 0
 				
-				return nil if limit and offset >= limit
-				return nil unless fill_read_buffer
+				if limit and offset >= limit
+					return nil
+				end
+				
+				unless fill_read_buffer
+					return nil
+				end
+				
+				if discard
+					# If we are discarding, we should consume the read buffer up to the offset:
+					consume_read_buffer(offset)
+					offset = 0
+				end
 			end
 			
 			return index
@@ -136,13 +147,36 @@ module IO::Stream
 		# @parameter pattern [String] The pattern to match.
 		# @parameter offset [Integer] The offset to start searching from.
 		# @parameter limit [Integer] The maximum number of bytes to read, including the pattern (even if chomped).
-		# @returns [String | Nil] The contents of the stream up until the pattern, which is consumed but not returned.
+		# @parameter chomp [Boolean] Whether to remove the pattern from the returned data.
+		# @returns [String | Nil] The contents of the stream up until the pattern, or nil if the pattern was not found. 
 		def read_until(pattern, offset = 0, limit: nil, chomp: true)
 			if index = index_of(pattern, offset, limit)
 				return nil if limit and index >= limit
 				
 				@read_buffer.freeze
 				matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
+				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
+				
+				return matched
+			end
+		end
+		
+		# Efficiently discard data from the stream until encountering pattern.
+		# @parameter pattern [String] The pattern to match.
+		# @parameter offset [Integer] The offset to start searching from.
+		# @parameter limit [Integer] The maximum number of bytes to read, including the pattern.
+		# @returns [String | Nil] The contents of the stream up until the pattern, or nil if the pattern was not found.
+		def discard_until(pattern, offset = 0, limit: nil)
+			if index = index_of(pattern, offset, limit, true)
+				@read_buffer.freeze
+				
+				if limit and index >= limit
+					@read_buffer = @read_buffer.byteslice(limit, @read_buffer.bytesize)
+					
+					return nil
+				end
+				
+				matched = @read_buffer.byteslice(0, index+pattern.bytesize)
 				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
 				
 				return matched
