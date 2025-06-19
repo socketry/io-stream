@@ -133,8 +133,7 @@ module IO::Stream
 		
 		# Reads data from the underlying stream as efficiently as possible.
 		def sysread(size, buffer)
-			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
-			while true
+			while !@io.closed?
 				result = @io.read_nonblock(size, buffer, exception: false)
 				
 				case result
@@ -146,8 +145,10 @@ module IO::Stream
 					return result
 				end
 			end
-		rescue Errno::EBADF
-			raise ::IOError, "stream closed"
+			
+			# Otherwise, the `@io` was closed while reading:
+			# https://github.com/ruby/openssl/issues/798
+			raise ::IOError, "closed stream"
 		end
 	end
 end
