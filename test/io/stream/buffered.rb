@@ -438,6 +438,107 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(write_buffer).to be(:empty?)
 		end
 	end
+	
+	with "#discard_until" do
+		it "can discard data until pattern" do
+			server.write("hello\nworld\ntest")
+			server.close
+			
+			# Discard until "\n" - should return chunk ending with the pattern
+			chunk = client.discard_until("\n")
+			expect(chunk).not.to be_nil
+			expect(chunk).to be(:end_with?, "\n")
+			# Read the remaining data to verify it starts with "world"
+			expect(client.read(5)).to be == "world"
+			
+			# Discard until "t" - should return chunk ending with the pattern  
+			chunk = client.discard_until("t")
+			expect(chunk).not.to be_nil
+			expect(chunk).to be(:end_with?, "t")
+			# Read remaining data
+			expect(client.read).to be == "est"
+		end
+		
+		it "returns nil when pattern not found and discards all data" do
+			server.write("hello world")
+			server.close
+			
+			expect(client.discard_until("\n")).to be_nil
+			# Data should still be available since pattern was not found
+			expect(client.read).to be == "hello world"
+		end
+		
+		it "can discard with a limit" do
+			server.write("hello\nworld\n")
+			server.close
+			
+			# Use peek to verify initial buffer state
+			expect(client.peek).to be == "hello\nworld\n"
+			
+			# Limit too small to find pattern - discards up to limit
+			expect(client.discard_until("\n", limit: 4)).to be_nil
+			
+			# Use peek to verify that 4 bytes were discarded
+			expect(client.peek).to be == "o\nworld\n"
+			
+			# After discarding 4 bytes, should find pattern in remaining data
+			chunk = client.discard_until("\n", limit: 5)
+			expect(chunk).not.to be_nil
+			expect(chunk).to be(:end_with?, "\n")
+			
+			# Use peek to verify final buffer state
+			expect(client.peek).to be == "world\n"
+			expect(client.read).to be == "world\n"
+		end
+		
+		it "handles patterns spanning buffer boundaries" do
+			# Use a small block size to force the pattern to span boundaries
+			client.block_size = 3
+			
+			server.write("ab")
+			server.flush
+			server.write("cdef")
+			server.close
+			
+			# Pattern "cd" spans the boundary between "ab" and "cdef"
+			chunk = client.discard_until("cd")
+			expect(chunk).not.to be_nil
+			expect(chunk).to be(:end_with?, "cd")
+			expect(client.read).to be == "ef"
+		end
+		
+		it "handles large patterns efficiently" do
+			large_pattern = "X" * 20  # Trigger sliding window logic
+			server.write("some data before")
+			server.write(large_pattern)
+			server.write("some data after")
+			server.close
+			
+			chunk = client.discard_until(large_pattern)
+			expect(chunk).not.to be_nil
+			expect(chunk).to be(:end_with?, large_pattern)
+			expect(client.read).to be == "some data after"
+		end
+		
+		with "with 1-byte block size" do
+			it "can discard data with a multi-byte pattern" do
+				server.write("hello\nworld\n")
+				server.close
+				
+				client.block_size = 1
+				
+				chunk1 = client.discard_until("\n")
+				expect(chunk1).not.to be_nil
+				expect(chunk1).to be(:end_with?, "\n")
+				
+				chunk2 = client.discard_until("\n")
+				expect(chunk2).not.to be_nil
+				expect(chunk2).to be(:end_with?, "\n")
+				
+				expect(client.discard_until("\n")).to be_nil
+			end
+		end
+	end
 end
 
 ABidirectionalStream = Sus::Shared("a bidirectional stream") do
