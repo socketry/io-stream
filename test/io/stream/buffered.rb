@@ -4,6 +4,7 @@
 # Copyright, 2024, by Samuel Williams.
 
 require "io/stream/buffered"
+require "tempfile"
 
 require "sus/fixtures/async/reactor_context"
 require "sus/fixtures/openssl/verified_certificate_context"
@@ -20,6 +21,89 @@ describe IO::Stream::Buffered do
 	with "MAXIMUM_READ_SIZE" do
 		it "should exist and be reasonable" do
 			expect(IO::Stream::MAXIMUM_READ_SIZE).to be_within(1024*64..1024*64*512)
+		end
+	end
+	
+	with ".open" do
+		let(:tempfile) {Tempfile.new("io_stream_buffered_test")}
+		let(:test_file_path) {tempfile.path}
+		
+		after do
+			tempfile.close
+			tempfile.unlink
+		end
+		
+		it "can open a file and return a buffered stream" do
+			stream = IO::Stream::Buffered.open(test_file_path, "w+")
+			
+			expect(stream).to be_a(IO::Stream::Buffered)
+			expect(stream.io).to be_a(File)
+			
+			stream.write("Hello, World!")
+			stream.flush
+			stream.close
+			
+			content = File.read(test_file_path)
+			expect(content).to be == "Hello, World!"
+		end
+		
+		it "can open a file with a block and auto-close" do
+			result = nil
+			stream_reference = nil
+			
+			# Create a separate tempfile for this test to avoid conflicts
+			block_tempfile = Tempfile.new("io_stream_buffered_block_test")
+			block_file_path = block_tempfile.path
+			block_tempfile.close
+			
+			begin
+				result = IO::Stream::Buffered.open(block_file_path, "w+") do |stream|
+					stream_reference = stream
+					
+					expect(stream).to be_a(IO::Stream::Buffered)
+					expect(stream.io).to be_a(File)
+					
+					stream.write("Block test data")
+					stream.flush
+					
+					:block_result
+				end
+				
+				# The block's return value should be returned
+				expect(result).to be == :block_result
+				
+				# The stream should be automatically closed
+				expect(stream_reference).to be(:closed?)
+				
+				# The file should contain the written data
+				content = File.read(block_file_path)
+				expect(content).to be == "Block test data"
+			ensure
+				File.unlink(block_file_path) if File.exist?(block_file_path)
+			end
+			expect(content).to be == "Block test data"
+		end
+		
+		it "ensures stream is closed even when block raises an exception" do
+			stream_reference = nil
+			
+			expect do
+				IO::Stream::Buffered.open(test_file_path, "w+") do |stream|
+					stream_reference = stream
+					
+					stream.write("Exception test")
+					stream.flush
+					
+					raise StandardError, "Test exception"
+				end
+			end.to raise_exception(StandardError, message: be == "Test exception")
+			
+			# The stream should be closed despite the exception
+			expect(stream_reference).to be(:closed?)
+			
+			# The file should still contain the written data
+			content = File.read(test_file_path)
+			expect(content).to be == "Exception test"
 		end
 	end
 end
