@@ -13,6 +13,8 @@ module IO::Stream
 	#
 	# You must implement the `syswrite` method to write data to the underlying IO.
 	module Writable
+		# Initialize writable stream functionality.
+		# @parameter minimum_write_size [Integer] The minimum buffer size before flushing.
 		def initialize(minimum_write_size: MINIMUM_WRITE_SIZE, **, &block)
 			@writing = ::Thread::Mutex.new
 			@write_buffer = StringBuffer.new
@@ -22,15 +24,6 @@ module IO::Stream
 		end
 		
 		attr_accessor :minimum_write_size
-		
-		private def drain(buffer)
-			begin
-				syswrite(buffer)
-			ensure
-				# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
-				buffer.clear
-			end
-		end
 		
 		# Flushes buffered data to the stream.
 		def flush
@@ -59,13 +52,17 @@ module IO::Stream
 			return string.bytesize
 		end
 		
-		# Writes `string` to the stream and returns self.
+		# Appends `string` to the buffer and returns self for method chaining.
+		# @parameter string [String] the string to write to the stream.
 		def <<(string)
 			write(string)
 			
 			return self
 		end
 		
+		# Write arguments to the stream followed by a separator and flush immediately.
+		# @parameter arguments [Array] The arguments to write to the stream.
+		# @parameter separator [String] The separator to append after each argument.
 		def puts(*arguments, separator: $/)
 			return if arguments.empty?
 			
@@ -78,8 +75,18 @@ module IO::Stream
 			end
 		end
 		
+		# Close the write end of the stream by flushing any remaining data.
 		def close_write
 			flush
+		end
+		
+		private def drain(buffer)
+			begin
+				syswrite(buffer)
+			ensure
+				# If the write operation fails, we still need to clear this buffer, and the data is essentially lost.
+				buffer.clear
+			end
 		end
 	end
 end

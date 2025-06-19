@@ -5,6 +5,8 @@
 
 class IO
 	unless method_defined?(:readable?, false)
+		# Check if the IO is readable.
+		# @returns [Boolean] True if the IO is readable (not closed).
 		def readable?
 			# Do not call `eof?` here as it is not concurrency-safe and it can block.
 			!closed?
@@ -16,6 +18,8 @@ require "socket"
 
 class BasicSocket
 	unless method_defined?(:readable?, false)
+		# Check if the socket is readable.
+		# @returns [Boolean] True if the socket is readable.
 		def readable?
 			# If we can wait for the socket to become readable, we know that the socket may still be open.
 			result = self.recv_nonblock(1, ::Socket::MSG_PEEK, exception: false)
@@ -36,6 +40,8 @@ require "stringio"
 
 class StringIO
 	unless method_defined?(:readable?, false)
+		# Check if the StringIO is readable.
+		# @returns [Boolean] True if the StringIO is readable (not at EOF).
 		def readable?
 			!eof?
 		end
@@ -46,6 +52,8 @@ require "openssl"
 
 class OpenSSL::SSL::SSLSocket
 	unless method_defined?(:readable?, false)
+		# Check if the SSL socket is readable.
+		# @returns [Boolean] True if the SSL socket is readable.
 		def readable?
 			to_io.readable?
 		end

@@ -25,6 +25,10 @@ module IO::Stream
 	#
 	# You must implement the `sysread` method to read data from the underlying IO.
 	module Readable
+		# Initialize readable stream functionality.
+		# @parameter minimum_read_size [Integer] The minimum size for read operations.
+		# @parameter maximum_read_size [Integer] The maximum size for read operations.
+		# @parameter block_size [Integer] Legacy parameter, use minimum_read_size instead.
 		def initialize(minimum_read_size: MINIMUM_READ_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, block_size: nil, **, &block)
 			@done = false
 			@read_buffer = StringBuffer.new
@@ -37,18 +41,24 @@ module IO::Stream
 			
 			super(**, &block) if defined?(super)
 		end
-		
+
 		attr_accessor :minimum_read_size
-		
+
 		# Legacy accessor for backwards compatibility
+		# @returns [Integer] The minimum read size.
 		def block_size
 			@minimum_read_size
 		end
-		
+
+		# Legacy setter for backwards compatibility
+		# @parameter value [Integer] The minimum read size.
 		def block_size=(value)
 			@minimum_read_size = value
 		end
-		
+
+		# Read data from the stream.
+		# @parameter size [Integer | Nil] The number of bytes to read. If nil, read until end of stream.
+		# @returns [String] The data read from the stream.
 		def read(size = nil)
 			return String.new(encoding: Encoding::BINARY) if size == 0
 			
@@ -80,6 +90,10 @@ module IO::Stream
 			return consume_read_buffer(size)
 		end
 		
+		# Read exactly the specified number of bytes.
+		# @parameter size [Integer] The number of bytes to read.
+		# @parameter exception [Class] The exception to raise if not enough data is available.
+		# @returns [String] The data read from the stream.
 		def read_exactly(size, exception: EOFError)
 			if buffer = read(size)
 				if buffer.bytesize != size
@@ -97,6 +111,11 @@ module IO::Stream
 			read_partial(size) or raise EOFError, "Encountered done while reading data!"
 		end
 		
+		# Find the index of a pattern in the read buffer, reading more data if needed.
+		# @parameter pattern [String] The pattern to search for.
+		# @parameter offset [Integer] The offset to start searching from.
+		# @parameter limit [Integer | Nil] The maximum number of bytes to read while searching.
+		# @returns [Integer | Nil] The index of the pattern, or nil if not found.
 		private def index_of(pattern, offset, limit)
 			# We don't want to split on the pattern, so we subtract the size of the pattern.
 			split_offset = pattern.bytesize - 1
@@ -130,6 +149,9 @@ module IO::Stream
 			end
 		end
 		
+		# Peek at data in the buffer without consuming it.
+		# @parameter size [Integer | Nil] The number of bytes to peek at. If nil, peek at all available data.
+		# @returns [String] The data in the buffer without consuming it.
 		def peek(size = nil)
 			if size
 				until @done or @read_buffer.bytesize >= size
@@ -147,6 +169,11 @@ module IO::Stream
 			return @read_buffer
 		end
 		
+		# Read a line from the stream, similar to IO#gets.
+		# @parameter separator [String] The line separator to search for.
+		# @parameter limit [Integer | Nil] The maximum number of bytes to read.
+		# @parameter chomp [Boolean] Whether to remove the separator from the returned line.
+		# @returns [String | Nil] The line read from the stream, or nil if at end of stream.
 		def gets(separator = $/, limit = nil, chomp: false)
 			# Compatibility with IO#gets:
 			if separator.is_a?(Integer)
@@ -204,6 +231,7 @@ module IO::Stream
 		
 		alias eof? done?
 		
+		# Mark the stream as done and raise `EOFError`.
 		def done!
 			@read_buffer.clear
 			@done = true
@@ -230,6 +258,7 @@ module IO::Stream
 			return !closed?
 		end
 		
+		# Close the read end of the stream.
 		def close_read
 		end
 		
@@ -266,7 +295,7 @@ module IO::Stream
 		end
 		
 		# Consumes at most `size` bytes from the buffer.
-		# @parameter size [Integer|nil] The amount of data to consume. If nil, consume entire buffer.
+		# @parameter size [Integer | Nil] The amount of data to consume. If nil, consume entire buffer.
 		def consume_read_buffer(size = nil)
 			# If we are at done, and the read buffer is empty, we can't consume anything.
 			return nil if @done && @read_buffer.empty?

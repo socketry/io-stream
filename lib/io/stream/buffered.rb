@@ -6,7 +6,13 @@
 require_relative "generic"
 
 module IO::Stream
+	# A buffered stream implementation that wraps an underlying IO object to provide efficient buffered reading and writing.
 	class Buffered < Generic
+		# Open a file and wrap it in a buffered stream.
+		# @parameter path [String] The file path to open.
+		# @parameter mode [String] The file mode (e.g., "r+", "w", "a").
+		# @parameter options [Hash] Additional options passed to the stream constructor.
+		# @returns [IO::Stream::Buffered] A buffered stream wrapping the opened file.
 		def self.open(path, mode = "r+", **options)
 			stream = self.new(::File.open(path, mode), **options)
 			
@@ -19,6 +25,10 @@ module IO::Stream
 			end
 		end
 		
+		# Wrap an existing IO object in a buffered stream.
+		# @parameter io [IO] The IO object to wrap.
+		# @parameter options [Hash] Additional options passed to the stream constructor.
+		# @returns [IO::Stream::Buffered] A buffered stream wrapping the IO object.
 		def self.wrap(io, **options)
 			if io.respond_to?(:buffered=)
 				io.buffered = false
@@ -37,6 +47,8 @@ module IO::Stream
 			end
 		end
 		
+		# Initialize a new buffered stream.
+		# @parameter io [IO] The underlying IO object to wrap.
 		def initialize(io, ...)
 			super(...)
 			
@@ -47,27 +59,36 @@ module IO::Stream
 				@timeout = nil
 			end
 		end
-		
+
+		# @attribute [IO] The wrapped IO object.
 		attr :io
-		
+
+		# Get the underlying IO object.
+		# @returns [IO] The underlying IO object.
 		def to_io
 			@io.to_io
 		end
-		
+
+		# Check if the stream is closed.
+		# @returns [Boolean] True if the stream is closed.
 		def closed?
 			@io.closed?
 		end
-		
+
+		# Close the read end of the stream.
 		def close_read
 			@io.close_read
 		end
-		
+
+		# Close the write end of the stream.
 		def close_write
 			super
 		ensure
 			@io.close_write
 		end
-		
+
+		# Check if the stream is readable.
+		# @returns [Boolean] True if the stream is readable.
 		def readable?
 			super && @io.readable?
 		end
