@@ -12,7 +12,7 @@ Please see the [project documentation](https://socketry.github.io/io-stream) for
 
 Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
 
-### Unreleased
+### v0.7.0
 
   - Split stream functionality into separate `Readable` and `Writable` modules for better modularity and composition.
   - Remove unused timeout shim functionality.

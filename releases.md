@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.7.0
 
   - Split stream functionality into separate `Readable` and `Writable` modules for better modularity and composition.
   - Remove unused timeout shim functionality.
@@ -12,7 +12,7 @@
 
 ## v0.6.0
 
-  - Improve compatibility of `gets` implementation to better match Ruby's IO#gets behavior.
+  - Improve compatibility of `gets` implementation to better match Ruby's IO\#gets behavior.
 
 ## v0.5.0
 
@@ -68,4 +68,3 @@
   - Provide `IO::Stream::Buffered` class for efficient buffered I/O operations.
   - Add `readable?` method to check stream readability status.
   - Include basic test suite.
-
