@@ -35,7 +35,7 @@ module IO::Stream
 			return if closed?
 			
 			begin
-				flush
+				self.flush
 			rescue
 				# We really can't do anything here unless we want #close to raise exceptions.
 			ensure
