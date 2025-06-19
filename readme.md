@@ -8,6 +8,64 @@ Provide a buffered stream implementation for Ruby, independent of the underlying
 
 Please see the [project documentation](https://socketry.github.io/io-stream) for more details.
 
+## Releases
+
+Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
+
+### Unreleased
+
+  - Split stream functionality into separate `Readable` and `Writable` modules for better modularity and composition.
+  - Remove unused timeout shim functionality.
+  - 100% documentation coverage.
+
+### v0.6.1
+
+  - Fix compatibility with Ruby v3.3.0 - v3.3.6 where broken `@io.close` could hang.
+
+### v0.6.0
+
+  - Improve compatibility of `gets` implementation to better match Ruby's IO\#gets behavior.
+
+### v0.5.0
+
+  - Add support for `read_until(limit:)` parameter to limit the amount of data read.
+  - Minor documentation improvements.
+
+### v0.4.3
+
+  - Add comprehensive tests for `buffered?` method on `SSLSocket`.
+  - Ensure TLS connections have correct buffering behavior.
+  - Improve test suite organization and readability.
+
+### v0.4.2
+
+  - Add external test suite for better integration testing.
+  - Update dependencies and improve code style with RuboCop.
+
+### v0.4.1
+
+  - Add compatibility fix for `SSLSocket` raising `EBADF` errors.
+  - Fix `IO#close` hang issue in certain scenarios.
+  - Add `#to_io` method to `IO::Stream::Buffered` for better compatibility.
+  - Modernize gem structure and dependencies.
+
+### v0.4.0
+
+  - Add convenient `IO.Stream()` constructor method for creating buffered streams.
+
+### v0.3.0
+
+  - Add support for timeouts with compatibility shims for various IO types.
+
+### v0.2.0
+
+  - Prefer `write_nonblock` in `syswrite` implementation for better non-blocking behavior.
+  - Add test cases for crash scenarios.
+
+## See Also
+
+  - [async-io](https://github.com/socketry/async-io) — Where this implementation originally came from.
+
 ## Contributing
 
 We welcome contributions to this project.
@@ -25,7 +83,3 @@ In order to protect users of this project, we require all contributors to comply
 ### Community Guidelines
 
 This project is best served by a collaborative and respectful environment. Treat each other professionally, respect differing viewpoints, and engage constructively. Harassment, discrimination, or harmful behavior is not tolerated. Communicate clearly, listen actively, and support one another. If any issues arise, please inform the project maintainers.
-
-## See Also
-
-  - [async-io](https://github.com/socketry/async-io) — Where this implementation originally came from.
