@@ -106,23 +106,26 @@ module IO::Stream
 			end
 		end
 		
-		def syswrite(buffer)
-			# This fails due to re-entrancy issues with a concurrent call to `sysclose`.
-			# return @io.write(buffer)
-			
-			while true
-				result = @io.write_nonblock(buffer, exception: false)
-				
-				case result
-				when :wait_readable
-					@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
-				when :wait_writable
-					@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
-				else
-					if result == buffer.bytesize
-						return
+		if RUBY_VERSION >= "3.3"
+			def syswrite(buffer)
+				return @io.write(buffer)
+			end
+		else
+			def syswrite(buffer)
+				while true
+					result = @io.write_nonblock(buffer, exception: false)
+					
+					case result
+					when :wait_readable
+						@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
+					when :wait_writable
+						@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
 					else
-						buffer = buffer.byteslice(result, buffer.bytesize)
+						if result == buffer.bytesize
+							return
+						else
+							buffer = buffer.byteslice(result, buffer.bytesize)
+						end
 					end
 				end
 			end
