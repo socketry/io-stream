@@ -13,7 +13,7 @@ describe IO::Stream::Buffered do
 	# This constant is part of the public interface, but was renamed to `Async::IO::BLOCK_SIZE`.
 	with "BLOCK_SIZE" do
 		it "should exist and be reasonable" do
-			expect(IO::Stream::BLOCK_SIZE).to be_within(1024...1024*128)
+			expect(IO::Stream::BLOCK_SIZE).to be_within(1024...1024*1024)
 		end
 	end
 	
@@ -257,9 +257,9 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		it "should flush underlying data when it exceeds block size" do
 			expect(server).to receive(:syswrite).once
 			
-			server.block_size = 8
+			server.minimum_write_size = 8
 			
-			server.block_size.times do
+			8.times do
 				server.write("!")
 			end
 		end
