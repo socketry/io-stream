@@ -3,6 +3,7 @@
 ## Unreleased
 
   - On Ruby v3.3+, use `IO#write` directly instead of `IO#write_nonblock`, for better performance.
+  - `Buffered#sysread` now checks `@io.closed?` before attempting to read, improving error handling.
 
 ## v0.7.0
 
