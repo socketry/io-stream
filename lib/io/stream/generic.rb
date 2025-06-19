@@ -7,7 +7,6 @@ require_relative "string_buffer"
 
 require_relative "shim/buffered"
 require_relative "shim/readable"
-require_relative "shim/timeout"
 
 require_relative "openssl"
 
