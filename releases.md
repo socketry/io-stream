@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - On Ruby v3.3+, use `IO#write` directly instead of `IO#write_nonblock`, for better performance.
+
 ## v0.7.0
 
   - Split stream functionality into separate `Readable` and `Writable` modules for better modularity and composition.
