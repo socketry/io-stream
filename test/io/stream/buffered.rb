@@ -247,6 +247,37 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 	end
 	
+	with "#<<" do
+		it "should append string and return self for method chaining" do
+			result = server << "Hello"
+			expect(result).to be_equal(server)
+			
+			server << " " << "World!"
+			server.flush
+			
+			expect(client.read(12)).to be == "Hello World!"
+		end
+		
+		it "should write data without explicit flush" do
+			server.minimum_write_size = 5
+			
+			expect(server).to receive(:syswrite).once
+			
+			server << "Hello"
+			
+			expect(client.read(5)).to be == "Hello"
+		end
+		
+		it "should buffer data when below minimum write size" do
+			server.minimum_write_size = 10
+			
+			expect(server).not.to receive(:syswrite)
+			
+			server << "Hi"
+			# Data should still be in buffer, not flushed
+		end
+	end
+	
 	with "#flush" do
 		it "should not call write if write buffer is empty" do
 			expect(server).not.to receive(:syswrite)
