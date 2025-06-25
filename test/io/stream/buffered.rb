@@ -321,6 +321,8 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		end
 		
 		it "times out when writing" do
+			skip "#write with timeout not supported on Windows" if RUBY_PLATFORM =~ /win32|mswin|mingw/
+			
 			server.io.timeout = 0.001
 			
 			expect do

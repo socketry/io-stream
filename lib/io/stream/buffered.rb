@@ -106,12 +106,14 @@ module IO::Stream
 			end
 		end
 		
-		if RUBY_VERSION >= "3.3"
+		if RUBY_VERSION >= "3.3" # and RUBY_PLATFORM !~ /win32|mswin|mingw/
 			def syswrite(buffer)
 				return @io.write(buffer)
 			end
 		else
 			def syswrite(buffer)
+				raise IOError, "stream closed" if @io.closed?
+				
 				while true
 					result = @io.write_nonblock(buffer, exception: false)
 					
@@ -133,6 +135,8 @@ module IO::Stream
 		
 		# Reads data from the underlying stream as efficiently as possible.
 		def sysread(size, buffer)
+			raise IOError, "stream closed" if @io.closed?
+			
 			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
 			while true
 				result = @io.read_nonblock(size, buffer, exception: false)
