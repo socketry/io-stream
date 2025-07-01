@@ -139,7 +139,17 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client.read).to be == "Hello World"
 			expect(client).to be(:eof?)
 		end
-
+		
+		it "reads until done" do
+			server.close
+			
+			# Subsequent reads should return nil:
+			expect(client.read(1)).to be_nil
+			
+			# Reading with no length should return an empty string:
+			expect(client.read).to be == ""
+		end
+		
 		it "reads only the amount requested" do
 			server.write "Hello World"
 			server.close
@@ -714,7 +724,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 	with "#close" do
 		it "should close the stream" do
 			server.close
-			expect(client.read).to be_nil
+			expect(client.read).to be == ""
 			
 			expect(server.closed?).to be_truthy
 			expect(client.closed?).to be_falsey
