@@ -12,6 +12,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream) for
 
 Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
 
+### v0.10.0
+
+  - Rename `done?` to `finished?` for clarity and consistency.
+
 ### v0.9.1
 
   - Fix EOF behavior to match Ruby IO semantics: `read()` returns empty string `""` at EOF while `read(size)` returns `nil` at EOF.
@@ -54,13 +58,6 @@ Please see the [project releases](https://socketry.github.io/io-streamreleases/i
 
   - Add external test suite for better integration testing.
   - Update dependencies and improve code style with RuboCop.
-
-### v0.4.1
-
-  - Add compatibility fix for `SSLSocket` raising `EBADF` errors.
-  - Fix `IO#close` hang issue in certain scenarios.
-  - Add `#to_io` method to `IO::Stream::Buffered` for better compatibility.
-  - Modernize gem structure and dependencies.
 
 ## See Also
 

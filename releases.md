@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.10.0
 
   - Rename `done?` to `finished?` for clarity and consistency.
 
