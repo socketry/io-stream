@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Add support for `buffer` parameter in `read`, `read_exactly`, and `read_partial` methods to allow reading into a provided buffer.
+
 ## v0.8.0
 
   - On Ruby v3.3+, use `IO#write` directly instead of `IO#write_nonblock`, for better performance.

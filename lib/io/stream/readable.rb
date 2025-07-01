@@ -58,9 +58,18 @@ module IO::Stream
 
 		# Read data from the stream.
 		# @parameter size [Integer | Nil] The number of bytes to read. If nil, read until end of stream.
-		# @returns [String] The data read from the stream.
-		def read(size = nil)
-			return String.new(encoding: Encoding::BINARY) if size == 0
+		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
+		# @returns [String] The data read from the stream, or the provided buffer filled with data.
+		def read(size = nil, buffer = nil)
+			if size == 0
+				if buffer
+					buffer.clear
+					buffer.force_encoding(Encoding::BINARY)
+					return buffer
+				else
+					return String.new(encoding: Encoding::BINARY)
+				end
+			end
 			
 			if size
 				until @done or @read_buffer.bytesize >= size
@@ -76,26 +85,37 @@ module IO::Stream
 				end
 			end
 			
-			return consume_read_buffer(size)
+			return consume_read_buffer(size, buffer)
 		end
 		
 		# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
-		def read_partial(size = nil)
-			return String.new(encoding: Encoding::BINARY) if size == 0
+		# @parameter size [Integer | Nil] The number of bytes to read. If nil, read all available data.
+		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
+		# @returns [String] The data read from the stream, or the provided buffer filled with data.
+		def read_partial(size = nil, buffer = nil)
+			if size == 0
+				if buffer
+					buffer.clear
+					buffer.force_encoding(Encoding::BINARY)
+					return buffer
+				else
+					return String.new(encoding: Encoding::BINARY)
+				end
+			end
 		
 			if !@done and @read_buffer.empty?
 				fill_read_buffer
 			end
 			
-			return consume_read_buffer(size)
+			return consume_read_buffer(size, buffer)
 		end
 		
 		# Read exactly the specified number of bytes.
 		# @parameter size [Integer] The number of bytes to read.
 		# @parameter exception [Class] The exception to raise if not enough data is available.
 		# @returns [String] The data read from the stream.
-		def read_exactly(size, exception: EOFError)
-			if buffer = read(size)
+		def read_exactly(size, buffer = nil, exception: EOFError)
+			if buffer = read(size, buffer)
 				if buffer.bytesize != size
 					raise exception, "Could not read enough data!"
 				end
@@ -107,8 +127,11 @@ module IO::Stream
 		end
 		
 		# This is a compatibility shim for existing code that uses `readpartial`.
-		def readpartial(size = nil)
-			read_partial(size) or raise EOFError, "Encountered done while reading data!"
+		# @parameter size [Integer | Nil] The number of bytes to read.
+		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
+		# @returns [String] The data read from the stream.
+		def readpartial(size = nil, buffer = nil)
+			read_partial(size, buffer) or raise EOFError, "Encountered done while reading data!"
 		end
 		
 		# Find the index of a pattern in the read buffer, reading more data if needed.
@@ -330,25 +353,43 @@ module IO::Stream
 		
 		# Consumes at most `size` bytes from the buffer.
 		# @parameter size [Integer | Nil] The amount of data to consume. If nil, consume entire buffer.
-		def consume_read_buffer(size = nil)
+		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
+		# @returns [String | Nil] The consumed data, or nil if no data available.
+		def consume_read_buffer(size = nil, buffer = nil)
 			# If we are at done, and the read buffer is empty, we can't consume anything.
-			return nil if @done && @read_buffer.empty?
+			if @done && @read_buffer.empty?
+				# Clear the buffer even when returning nil
+				if buffer
+					buffer.clear
+					buffer.force_encoding(Encoding::BINARY)
+				end
+				return nil
+			end
 			
 			result = nil
 			
 			if size.nil? or size >= @read_buffer.bytesize
 				# Consume the entire read buffer:
-				result = @read_buffer
+				if buffer
+					buffer.clear
+					buffer << @read_buffer
+					result = buffer
+				else
+					result = @read_buffer
+				end
 				@read_buffer = StringBuffer.new
 			else
-				# This approach uses more memory.
-				# result = @read_buffer.slice!(0, size)
-				
 				# We know that we are not going to reuse the original buffer.
 				# But byteslice will generate a hidden copy. So let's freeze it first:
 				@read_buffer.freeze
 				
-				result = @read_buffer.byteslice(0, size)
+				if buffer
+					# Use replace instead of clear + << for better performance
+					buffer.replace(@read_buffer.byteslice(0, size))
+					result = buffer
+				else
+					result = @read_buffer.byteslice(0, size)
+				end
 				@read_buffer = @read_buffer.byteslice(size, @read_buffer.bytesize)
 			end
 			

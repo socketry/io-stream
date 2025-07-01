@@ -159,6 +159,79 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 				client.read(1)
 			end.to raise_exception(::IO::TimeoutError)
 		end
+		
+		with "buffer parameter" do
+			it "can read into a provided buffer" do
+				server.write "Hello World!"
+				server.close
+				
+				buffer = String.new("existing content")
+				result = client.read(5, buffer)
+				
+				# Should return the same buffer object
+				expect(result).to be_equal(buffer)
+				# Buffer should contain the read data and have binary encoding
+				expect(result).to be == "Hello"
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
+			it "clears existing buffer content before reading" do
+				server.write "Hello World!"
+				server.close
+				
+				buffer = String.new("old data")
+				result = client.read(5, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == "Hello"
+			end
+			
+			it "works with zero-length reads" do
+				buffer = String.new("content")
+				result = client.read(0, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == ""
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
+			it "works when reading entire stream" do
+				server.write "Hello World!"
+				server.close
+				
+				buffer = String.new
+				result = client.read(nil, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == "Hello World!"
+			end
+			
+			it "works with partial reads spanning multiple buffer fills" do
+				# Write more data than the typical buffer size to force multiple reads
+				large_data = "A" * 1000 + "B" * 1000 + "C" * 1000
+				server.write large_data
+				server.close
+				
+				buffer = String.new
+				result = client.read(2500, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result.bytesize).to be == 2500
+				expect(result).to be == large_data[0, 2500]
+			end
+			
+			it "returns nil when stream is done and buffer is empty" do
+				server.close
+				
+				buffer = String.new("content")
+				result = client.read(10, buffer)
+				
+				expect(result).to be_nil
+				
+				# Buffer should be cleared even when returning nil:
+				expect(buffer).to be == ""
+			end
+		end
 	end
 	
 	with "#peek" do
@@ -227,6 +300,127 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 				client.read_exactly(4)
 			end.to raise_exception(EOFError)
 		end
+		
+		with "buffer parameter" do
+			it "can read exactly into a provided buffer" do
+				server.write "Hello World!"
+				server.close
+				
+				buffer = String.new("existing content")
+				result = client.read_exactly(4, buffer)
+				
+				# Should return the same buffer object
+				expect(result).to be_equal(buffer)
+				# Buffer should contain exactly the requested data
+				expect(buffer).to be == "Hell"
+				# Should have binary encoding
+				expect(buffer.encoding).to be == Encoding::BINARY
+			end
+			
+			it "clears existing buffer content before reading" do
+				server.write "Hello World!"
+				server.close
+				
+				buffer = String.new("old data")
+				client.read_exactly(4, buffer)
+				
+				expect(buffer).to be == "Hell"
+			end
+			
+			it "raises exception when not enough data available" do
+				server.write "Hi"  # Only 2 bytes
+				server.close
+				
+				buffer = String.new("content")
+				
+				expect do
+					client.read_exactly(4, buffer)
+				end.to raise_exception(EOFError, message: be =~ /Could not read enough data/)
+				
+				# Buffer should still contain the partial data that was read
+				expect(buffer).to be == "Hi"
+			end
+			
+			it "raises exception when stream is already at EOF" do
+				server.close
+				
+				buffer = String.new("content")
+				
+				expect do
+					client.read_exactly(4, buffer)
+				end.to raise_exception(EOFError, message: be =~ /Encountered done while reading data/)
+				
+				# Buffer should be cleared even when exception is raised
+				expect(buffer).to be == ""
+			end
+			
+			it "works with zero-length reads" do
+				buffer = String.new("content")
+				result = client.read_exactly(0, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(buffer).to be == ""
+				expect(buffer.encoding).to be == Encoding::BINARY
+			end
+			
+			it "works with custom exception class" do
+				server.write "Hi"  # Only 2 bytes
+				server.close
+				
+				buffer = String.new("content")
+				
+				expect do
+					client.read_exactly(4, buffer, exception: StandardError)
+				end.to raise_exception(StandardError, message: be =~ /Could not read enough data/)
+				
+				expect(buffer).to be == "Hi"
+			end
+			
+			it "works when exactly the right amount of data is available" do
+				server.write "Hello"
+				server.close
+				
+				buffer = String.new
+				result = client.read_exactly(5, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(buffer).to be == "Hello"
+				expect(buffer.bytesize).to be == 5
+			end
+			
+			it "works with mix of buffer and non-buffer calls" do
+				server.write "Hello World!"
+				server.close
+				
+				# First call without buffer
+				data1 = client.read_exactly(5)
+				expect(data1).to be == "Hello"
+				
+				# Second call with buffer
+				buffer = String.new("existing")
+				result = client.read_exactly(1, buffer)
+				expect(result).to be_equal(buffer)
+				expect(buffer).to be == " "
+				
+				# Third call without buffer again
+				data3 = client.read_exactly(6)
+				expect(data3).to be == "World!"
+			end
+			
+			it "reads across multiple buffer fills" do
+				# Write more data than typical buffer to force multiple reads
+				large_data = "A" * 1000 + "B" * 1000 + "C" * 1000
+				server.write large_data
+				server.close
+				
+				buffer = String.new
+				result = client.read_exactly(2500, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(buffer.bytesize).to be == 2500
+				expect(buffer).to be == large_data[0, 2500]
+			end
+		end
 	end
 	
 	with "#read_until" do
@@ -249,7 +443,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client.read_until("\n", limit: nil)).to be == "world"
 		end
 		
-		with "with 1-byte block size" do
+		with "1-byte block size" do
 			it "can read a line with a multi-byte pattern" do
 				server.write("hello\nworld\n")
 				server.close
@@ -307,6 +501,86 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		
 		it "with a zero-length partial_read" do
 			expect(client.read_partial(0).encoding).to be == Encoding::BINARY
+		end
+		
+		with "buffer parameter" do
+			it "can read_partial into a provided buffer" do
+				buffer = String.new("existing content")
+				result = client.read_partial(5, buffer)
+				
+				# Should return the same buffer object
+				expect(result).to be_equal(buffer)
+				# Buffer should contain the read data and have binary encoding
+				expect(result).to be == "Hello"
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
+			it "clears existing buffer content before reading" do
+				buffer = String.new("old data")
+				result = client.read_partial(5, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == "Hello"
+			end
+			
+			it "works with zero-length partial reads" do
+				buffer = String.new("content")
+				result = client.read_partial(0, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == ""
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
+			it "works when reading all available data" do
+				buffer = String.new
+				result = client.read_partial(nil, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == "Hello World!Hello World!"
+			end
+			
+			it "works with multiple partial reads using same buffer" do
+				buffer = String.new
+				
+				# First partial read
+				result1 = client.read_partial(6, buffer)
+				expect(result1).to be_equal(buffer)
+				expect(result1).to be == "Hello "
+				
+				# Second partial read reuses the same buffer
+				result2 = client.read_partial(6, buffer)
+				expect(result2).to be_equal(buffer)
+				expect(result2).to be == "World!"
+			end
+			
+			it "returns empty string when maxlen is 0 even at EOF" do
+				# Read all data first
+				client.read_partial(nil)
+				
+				buffer = String.new("content")
+				result = client.read_partial(0, buffer)
+				
+				expect(result).to be_equal(buffer)
+				expect(result).to be == ""
+				expect(result.encoding).to be == Encoding::BINARY
+			end
+			
+			it "works with mix of buffer and non-buffer calls" do
+				# First call without buffer
+				data1 = client.read_partial(6)
+				expect(data1).to be == "Hello "
+				
+				# Second call with buffer
+				buffer = String.new("existing")
+				result = client.read_partial(6, buffer)
+				expect(result).to be_equal(buffer)
+				expect(result).to be == "World!"
+				
+				# Third call without buffer again
+				data3 = client.read_partial(6)
+				expect(data3).to be == "Hello "
+			end
 		end
 	end
 	
@@ -635,7 +909,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client.read).to be == "some data after"
 		end
 		
-		with "with 1-byte block size" do
+		with "1-byte block size" do
 			it "can discard data with a multi-byte pattern" do
 				server.write("hello\nworld\n")
 				server.close
