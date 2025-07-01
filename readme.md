@@ -12,6 +12,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream) for
 
 Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
 
+### v0.9.1
+
+  - Fix EOF behavior to match Ruby IO semantics: `read()` returns empty string `""` at EOF while `read(size)` returns `nil` at EOF.
+
 ### v0.9.0
 
   - Add support for `buffer` parameter in `read`, `read_exactly`, and `read_partial` methods to allow reading into a provided buffer.
@@ -57,10 +61,6 @@ Please see the [project releases](https://socketry.github.io/io-streamreleases/i
   - Fix `IO#close` hang issue in certain scenarios.
   - Add `#to_io` method to `IO::Stream::Buffered` for better compatibility.
   - Modernize gem structure and dependencies.
-
-### v0.4.0
-
-  - Add convenient `IO.Stream()` constructor method for creating buffered streams.
 
 ## See Also
 
