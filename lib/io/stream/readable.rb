@@ -30,7 +30,7 @@ module IO::Stream
 		# @parameter maximum_read_size [Integer] The maximum size for read operations.
 		# @parameter block_size [Integer] Legacy parameter, use minimum_read_size instead.
 		def initialize(minimum_read_size: MINIMUM_READ_SIZE, maximum_read_size: MAXIMUM_READ_SIZE, block_size: nil, **, &block)
-			@done = false
+			@finished = false
 			@read_buffer = StringBuffer.new
 			# Used as destination buffer for underlying reads.
 			@input_buffer = StringBuffer.new
@@ -72,7 +72,7 @@ module IO::Stream
 			end
 			
 			if size
-				until @done or @read_buffer.bytesize >= size
+				until @finished or @read_buffer.bytesize >= size
 					# Compute the amount of data we need to read from the underlying stream:
 					read_size = size - @read_buffer.bytesize
 					
@@ -80,7 +80,7 @@ module IO::Stream
 					fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
 				end
 			else
-				until @done
+				until @finished
 					fill_read_buffer
 				end
 				
@@ -114,7 +114,7 @@ module IO::Stream
 				end
 			end
 		
-			if !@done and @read_buffer.empty?
+			if !@finished and @read_buffer.empty?
 				fill_read_buffer
 			end
 			
@@ -134,7 +134,7 @@ module IO::Stream
 				return buffer
 			end
 			
-			raise exception, "Encountered done while reading data!"
+			raise exception, "Stream finished before reading enough data!"
 		end
 		
 		# This is a compatibility shim for existing code that uses `readpartial`.
@@ -142,7 +142,7 @@ module IO::Stream
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
 		# @returns [String] The data read from the stream.
 		def readpartial(size = nil, buffer = nil)
-			read_partial(size, buffer) or raise EOFError, "Encountered done while reading data!"
+			read_partial(size, buffer) or raise EOFError, "Stream finished before reading enough data!"
 		end
 		
 		# Find the index of a pattern in the read buffer, reading more data if needed.
@@ -222,7 +222,7 @@ module IO::Stream
 		# @returns [String] The data in the buffer without consuming it.
 		def peek(size = nil)
 			if size
-				until @done or @read_buffer.bytesize >= size
+				until @finished or @read_buffer.bytesize >= size
 					# Compute the amount of data we need to read from the underlying stream:
 					read_size = size - @read_buffer.bytesize
 					
@@ -231,7 +231,7 @@ module IO::Stream
 				end
 				return @read_buffer[..([size, @read_buffer.size].min - 1)]
 			end
-			until (block_given? && yield(@read_buffer)) or @done
+			until (block_given? && yield(@read_buffer)) or @finished
 				fill_read_buffer
 			end
 			return @read_buffer
@@ -287,33 +287,33 @@ module IO::Stream
 		# See {readable?} for a non-blocking alternative.
 		#
 		# @returns [Boolean] If the stream is at file which means there is no more data to be read.
-		def done?
+		def finished?
 			if !@read_buffer.empty?
 				return false
-			elsif @done
+			elsif @finished
 				return true
 			else
 				return !self.fill_read_buffer
 			end
 		end
 		
-		alias eof? done?
+		alias eof? finished?
 		
-		# Mark the stream as done and raise `EOFError`.
-		def done!
+		# Mark the stream as finished and raise `EOFError`.
+		def finish!
 			@read_buffer.clear
-			@done = true
+			@finished = true
 			
 			raise EOFError
 		end
 		
-		alias eof! done!
+		alias eof! finish!
 		
 		# Whether there is a chance that a read operation will succeed or not.
 		# @returns [Boolean] If the stream is readable, i.e. a `read` operation has a chance of success.
 		def readable?
 			# If we are at the end of the file, we can't read any more data:
-			if @done
+			if @finished
 				return false
 			end
 			
@@ -358,7 +358,7 @@ module IO::Stream
 			end
 			
 			# else for both cases above:
-			@done = true
+			@finished = true
 			return false
 		end
 		
@@ -367,8 +367,8 @@ module IO::Stream
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
 		# @returns [String | Nil] The consumed data, or nil if no data available.
 		def consume_read_buffer(size = nil, buffer = nil)
-			# If we are at done, and the read buffer is empty, we can't consume anything.
-			if @done && @read_buffer.empty?
+			# If we are at finished, and the read buffer is empty, we can't consume anything.
+			if @finished && @read_buffer.empty?
 				# Clear the buffer even when returning nil
 				if buffer
 					buffer.clear

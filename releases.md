@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Rename `done?` to `finished?` for clarity and consistency.
+
 ## v0.9.1
 
   - Fix EOF behavior to match Ruby IO semantics: `read()` returns empty string `""` at EOF while `read(size)` returns `nil` at EOF.

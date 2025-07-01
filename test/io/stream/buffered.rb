@@ -140,7 +140,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client).to be(:eof?)
 		end
 		
-		it "reads until done" do
+		it "reads until finished" do
 			server.close
 			
 			# Subsequent reads should return nil:
@@ -230,7 +230,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 				expect(result).to be == large_data[0, 2500]
 			end
 			
-			it "returns nil when stream is done and buffer is empty" do
+			it "returns nil when stream is finished and buffer is empty" do
 				server.close
 				
 				buffer = String.new("content")
@@ -358,7 +358,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 				
 				expect do
 					client.read_exactly(4, buffer)
-				end.to raise_exception(EOFError, message: be =~ /Encountered done while reading data/)
+				end.to raise_exception(EOFError, message: be =~ /Stream finished before reading enough data/)
 				
 				# Buffer should be cleared even when exception is raised
 				expect(buffer).to be == ""
@@ -713,7 +713,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		it "can close the write side of the stream" do
 			server.write("Hello World!")
 			
-			# We are done writing the request:
+			# We are finished writing the request:
 			server.close_write
 			
 			expect(client.read).to be == "Hello World!"
