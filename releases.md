@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Fix EOF behavior to match Ruby IO semantics: `read()` returns empty string `""` at EOF while `read(size)` returns `nil` at EOF.
+
 ## v0.9.0
 
   - Add support for `buffer` parameter in `read`, `read_exactly`, and `read_partial` methods to allow reading into a provided buffer.

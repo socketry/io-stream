@@ -83,6 +83,17 @@ module IO::Stream
 				until @done
 					fill_read_buffer
 				end
+				
+				if buffer
+					buffer.replace(@read_buffer)
+					@read_buffer.clear
+				else
+					buffer = @read_buffer
+					@read_buffer = StringBuffer.new
+				end
+				
+				# Read without size always returns a non-nil value, even if it is an empty string.
+				return buffer
 			end
 			
 			return consume_read_buffer(size, buffer)
