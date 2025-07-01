@@ -10,3 +10,6 @@ async-websocket:
 falcon:
   url: https://github.com/socketry/falcon.git
   command: bundle exec sus
+protocol-rack:
+  url: https://github.com/socketry/protocol-rack.git
+  command: bundle exec sus
