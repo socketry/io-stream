@@ -12,6 +12,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream) for
 
 Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
 
+### v0.9.0
+
+  - Add support for `buffer` parameter in `read`, `read_exactly`, and `read_partial` methods to allow reading into a provided buffer.
+
 ### v0.8.0
 
   - On Ruby v3.3+, use `IO#write` directly instead of `IO#write_nonblock`, for better performance.
@@ -57,10 +61,6 @@ Please see the [project releases](https://socketry.github.io/io-streamreleases/i
 ### v0.4.0
 
   - Add convenient `IO.Stream()` constructor method for creating buffered streams.
-
-### v0.3.0
-
-  - Add support for timeouts with compatibility shims for various IO types.
 
 ## See Also
 

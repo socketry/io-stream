@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.9.0
 
   - Add support for `buffer` parameter in `read`, `read_exactly`, and `read_partial` methods to allow reading into a provided buffer.
 
