@@ -825,13 +825,18 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			client.close
 			
 			task = reactor.async do
-				server.write("Hello World")
+				server.write("Hello")
+				server.flush
+				server.write("World")
 				server.flush
 			rescue Errno::EPIPE => error
 				error
+			rescue Errno::ECONNRESET => error
+				# OpenSSL sockets may raise ECONNRESET instead of EPIPE because they may try to read when writing:
+				error
 			end
 			
-			expect(task.wait).to be_a(Errno::EPIPE)
+			expect(task.wait).to be_a(Errno::EPIPE).or be_a(Errno::ECONNRESET)
 			
 			write_buffer = server.instance_variable_get(:@write_buffer)
 			expect(write_buffer).to be(:empty?)
@@ -1016,37 +1021,71 @@ describe "Socket.pair" do
 	
 	it_behaves_like AUnidirectionalStream
 	it_behaves_like ABidirectionalStream
+end
+
+describe TCPSocket do
+	include Sus::Fixtures::Async::ReactorContext
+	
+	before do
+		server = TCPServer.new("localhost", 0)
+		port = server.addr[1]
+		
+		@sockets = [
+			TCPSocket.new("localhost", port),
+			server.accept
+		]
+		
+		@client = IO::Stream::Buffered.wrap(@sockets[0])
+		@server = IO::Stream::Buffered.wrap(@sockets[1])
+	end
+	
+	after do
+		@sockets.each(&:close)
+	end
+	
+	attr :client
+	attr :server
+	
+	it_behaves_like AUnidirectionalStream
+	it_behaves_like ABidirectionalStream
 	it_behaves_like ASocketStream
 end
 
-describe "OpenSSL::SSL::SSLSocket" do
+describe OpenSSL::SSL::SSLSocket do
 	include Sus::Fixtures::Async::ReactorContext
-	
 	include Sus::Fixtures::OpenSSL::VerifiedCertificateContext
 	include Sus::Fixtures::OpenSSL::ValidCertificateContext
 	
-	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
-	
-	let(:client) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[0], client_context))}
-	let(:server) {IO::Stream::Buffered.wrap(OpenSSL::SSL::SSLSocket.new(sockets[1], server_context))}
-	
-	def before
-		super
+	before do
+		server = TCPServer.new("localhost", 0)
+		port = server.addr[1]
 		
-		# Closing the SSLSocket should also close the underlying IO:
-		client.io.sync_close = true
-		server.io.sync_close = true
+		@sockets = [
+			TCPSocket.new("localhost", port),
+			server.accept
+		]
+		
+		client = OpenSSL::SSL::SSLSocket.new(@sockets[0], client_context)
+		server = OpenSSL::SSL::SSLSocket.new(@sockets[1], server_context)
+		
+		client.sync_close = true
+		server.sync_close = true
 		
 		[
-			Async{server.io.accept},
-			Async{client.io.connect}
+			Async{server.accept},
+			Async{client.connect}
 		].each(&:wait)
+		
+		@client = IO::Stream::Buffered.wrap(client)
+		@server = IO::Stream::Buffered.wrap(server)
 	end
 	
-	def after(error = nil)
-		sockets.each(&:close)
-		super
+	after do
+		@sockets.each(&:close)
 	end
+	
+	attr :client
+	attr :server
 	
 	it_behaves_like AUnidirectionalStream
 	it_behaves_like ABidirectionalStream

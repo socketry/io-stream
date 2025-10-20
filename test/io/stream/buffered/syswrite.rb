@@ -30,6 +30,6 @@ describe "IO.pipe" do
 		end
 		
 		# Become a segfault:
-		# sleep 1
+		sleep 0.001
 	end
 end
