@@ -1,5 +1,10 @@
 # Releases
 
+## Unreleased
+
+  - Introduce `class IO::Stream::ConnectionResetError < Errno::ECONNRESET` to standardize connection reset error handling across different IO types.
+    - `OpenSSL::SSL::SSLSocket` raises `OpenSSL::SSL::SSLError` on connection reset, while other IO types raise `Errno::ECONNRESET`. `SSLError` is now rescued and re-raised as `IO::Stream::ConnectionResetError` for consistency.
+
 ## v0.10.0
 
   - Rename `done?` to `finished?` for clarity and consistency.
