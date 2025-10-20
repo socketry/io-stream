@@ -1,17 +1,17 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023-2024, by Samuel Williams.
+# Copyright, 2025, by Samuel Williams.
 
 require_relative "string_buffer"
 
 module IO::Stream
 	# The default block size for IO buffers. Defaults to 256KB (optimized for modern SSDs and networks).
 	BLOCK_SIZE = ENV.fetch("IO_STREAM_BLOCK_SIZE", 1024*256).to_i
-
+	
 	# The minimum read size for efficient I/O operations. Defaults to the same as BLOCK_SIZE.
 	MINIMUM_READ_SIZE = ENV.fetch("IO_STREAM_MINIMUM_READ_SIZE", BLOCK_SIZE).to_i
-
+	
 	# The maximum read size for a single read operation. This limit exists because:
 	# 1. System calls like read() cannot handle requests larger than SSIZE_MAX
 	# 2. Very large reads can cause memory pressure and poor interactive performance  
@@ -41,21 +41,21 @@ module IO::Stream
 			
 			super(**, &block) if defined?(super)
 		end
-
+		
 		attr_accessor :minimum_read_size
-
+		
 		# Legacy accessor for backwards compatibility
 		# @returns [Integer] The minimum read size.
 		def block_size
 			@minimum_read_size
 		end
-
+		
 		# Legacy setter for backwards compatibility
 		# @parameter value [Integer] The minimum read size.
 		def block_size=(value)
 			@minimum_read_size = value
 		end
-
+		
 		# Read data from the stream.
 		# @parameter size [Integer | Nil] The number of bytes to read. If nil, read until end of stream.
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
@@ -113,7 +113,7 @@ module IO::Stream
 					return String.new(encoding: Encoding::BINARY)
 				end
 			end
-		
+			
 			if !@finished and @read_buffer.empty?
 				fill_read_buffer
 			end

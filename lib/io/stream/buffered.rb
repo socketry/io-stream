@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024, by Samuel Williams.
+# Copyright, 2024-2025, by Samuel Williams.
 
 require_relative "generic"
 
@@ -59,34 +59,34 @@ module IO::Stream
 				@timeout = nil
 			end
 		end
-
+		
 		# @attribute [IO] The wrapped IO object.
 		attr :io
-
+		
 		# Get the underlying IO object.
 		# @returns [IO] The underlying IO object.
 		def to_io
 			@io.to_io
 		end
-
+		
 		# Check if the stream is closed.
 		# @returns [Boolean] True if the stream is closed.
 		def closed?
 			@io.closed?
 		end
-
+		
 		# Close the read end of the stream.
 		def close_read
 			@io.close_read
 		end
-
+		
 		# Close the write end of the stream.
 		def close_write
 			super
 		ensure
 			@io.close_write
 		end
-
+		
 		# Check if the stream is readable.
 		# @returns [Boolean] True if the stream is readable.
 		def readable?

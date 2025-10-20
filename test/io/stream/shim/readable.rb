@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024, by Samuel Williams.
+# Copyright, 2024-2025, by Samuel Williams.
 
 require "io/stream/shim/readable"
 
@@ -14,7 +14,7 @@ describe IO do
 	
 	it "should not be readable after closing" do
 		io.close
-	
+		
 		expect(io).not.to be(:readable?)
 	end
 end
@@ -42,13 +42,13 @@ describe TCPSocket do
 	
 	it "should not be readable after closing" do
 		client.close
-	
+		
 		expect(client).not.to be(:readable?)
 	end
 	
 	it "should not be readable after closing server" do
 		server.close
-	
+		
 		expect(client).not.to be(:readable?)
 	end
 end

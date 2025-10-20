@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024, by Samuel Williams.
+# Copyright, 2024-2025, by Samuel Williams.
 
 require "bundler/inline"
 
@@ -18,14 +18,14 @@ def close_while_reading(io)
 		Thread.current.report_on_exception = false
 		io.wait_readable
 	end
-		
+	
 	# Wait until the thread is blocked on read:
 	Thread.pass until thread.status == "sleep"
-		
+	
 	Async do
 		io.close
 	end
-		
+	
 	thread.join
 end
 

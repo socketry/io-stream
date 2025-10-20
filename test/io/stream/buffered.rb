@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024, by Samuel Williams.
+# Copyright, 2024-2025, by Samuel Williams.
 
 require "io/stream/buffered"
 require "tempfile"
@@ -282,7 +282,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			expect(client.read_partial(20)).to be == "o World"
 			expect(client).to be(:eof?)
 		end
-
+		
 		it "peeks everything when requested bytes is too large" do
 			server.write "Hello World"
 			server.close
@@ -652,7 +652,7 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			
 			server.flush
 		end
-
+		
 		it "should flush underlying data when it exceeds block size" do
 			expect(server).to receive(:syswrite).once
 			

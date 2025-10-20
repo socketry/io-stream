@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023-2024, by Samuel Williams.
+# Copyright, 2023-2025, by Samuel Williams.
 
 require "io/stream/shim/buffered"
 
@@ -84,7 +84,7 @@ describe StringIO do
 	
 	it "is always unbuffered" do
 		io.buffered = true
-	
+		
 		expect(io).not.to be(:buffered?)
 	end
 end
