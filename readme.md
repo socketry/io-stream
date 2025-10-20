@@ -12,6 +12,11 @@ Please see the [project documentation](https://socketry.github.io/io-stream) for
 
 Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
 
+### v0.11.0
+
+  - Introduce `class IO::Stream::ConnectionResetError < Errno::ECONNRESET` to standardize connection reset error handling across different IO types.
+      - `OpenSSL::SSL::SSLSocket` raises `OpenSSL::SSL::SSLError` on connection reset, while other IO types raise `Errno::ECONNRESET`. `SSLError` is now rescued and re-raised as `IO::Stream::ConnectionResetError` for consistency.
+
 ### v0.10.0
 
   - Rename `done?` to `finished?` for clarity and consistency.
@@ -53,11 +58,6 @@ Please see the [project releases](https://socketry.github.io/io-streamreleases/i
   - Add comprehensive tests for `buffered?` method on `SSLSocket`.
   - Ensure TLS connections have correct buffering behavior.
   - Improve test suite organization and readability.
-
-### v0.4.2
-
-  - Add external test suite for better integration testing.
-  - Update dependencies and improve code style with RuboCop.
 
 ## See Also
 
