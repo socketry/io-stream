@@ -825,10 +825,11 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 			client.close
 			
 			task = reactor.async do
-				server.write("Hello")
-				server.flush
-				server.write("World")
-				server.flush
+				# We do this as triggering EPIPE may require us to flush the network buffers:
+				100.times do
+					server.write("Hello World" * 1024)
+					server.flush
+				end
 			rescue Errno::EPIPE => error
 				error
 			rescue Errno::ECONNRESET => error
