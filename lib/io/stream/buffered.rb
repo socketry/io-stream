@@ -4,6 +4,7 @@
 # Copyright, 2024-2025, by Samuel Williams.
 
 require_relative "generic"
+require_relative "connection_reset_error"
 
 module IO::Stream
 	# A buffered stream implementation that wraps an underlying IO object to provide efficient buffered reading and writing.
@@ -146,6 +147,12 @@ module IO::Stream
 					return result
 				end
 			end
+		rescue OpenSSL::SSL::SSLError => error
+			if error.message =~ /unexpected eof while reading/
+				raise ConnectionResetError, "Connection reset by peer!"
+			end
+		rescue Errno::ECONNRESET
+			raise ConnectionResetError, "Connection reset by peer!"
 		rescue Errno::EBADF
 			raise ::IOError, "stream closed"
 		end

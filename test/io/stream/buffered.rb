@@ -958,6 +958,21 @@ ABidirectionalStream = Sus::Shared("a bidirectional stream") do
 	end
 end
 
+ASocketStream = Sus::Shared("a socket stream") do
+	with "#read" do
+		it "should raise ConnectionResetError when connection is abruptly closed" do
+			linger = [1, 0].pack("ii")
+			io = server.io.to_io
+			io.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, linger)
+			io.close
+			
+			expect do
+				client.read(4)
+			end.to raise_exception(IO::Stream::ConnectionResetError)
+		end
+	end
+end
+
 describe "IO.pipe" do
 	let(:pipe) {IO.pipe}
 	let(:client) {IO::Stream::Buffered.wrap(pipe[0])}
@@ -1001,6 +1016,7 @@ describe "Socket.pair" do
 	
 	it_behaves_like AUnidirectionalStream
 	it_behaves_like ABidirectionalStream
+	it_behaves_like ASocketStream
 end
 
 describe "OpenSSL::SSL::SSLSocket" do
