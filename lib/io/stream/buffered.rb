@@ -136,7 +136,8 @@ module IO::Stream
 		def sysread(size, buffer)
 			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
 			while true
-				result = @io.read_nonblock(size, buffer, exception: false)
+				mutable_buffer = buffer&.frozen? ? buffer.dup : buffer
+				result = @io.read_nonblock(size, mutable_buffer, exception: false)
 				
 				case result
 				when :wait_readable
