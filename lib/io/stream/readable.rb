@@ -38,12 +38,27 @@ module IO::Stream
 			# Support legacy block_size parameter for backwards compatibility
 			@minimum_read_size = block_size || minimum_read_size
 			@maximum_read_size = maximum_read_size
+
+			@fiber = nil
 			
 			super(**, &block) if defined?(super)
 		end
 		
 		attr_accessor :minimum_read_size
 		
+		def synchronized
+			if @fiber and @fiber != Fiber.current
+				$stderr.puts @fiber.backtrace
+				raise "Existing fiber found, cannot synchronize concurrently!"
+			else
+				@fiber = Fiber.current
+			end
+			
+			yield
+		ensure
+			@fiber = nil
+		end
+
 		# Legacy accessor for backwards compatibility
 		# @returns [Integer] The minimum read size.
 		def block_size
@@ -61,64 +76,68 @@ module IO::Stream
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
 		# @returns [String] The data read from the stream, or the provided buffer filled with data.
 		def read(size = nil, buffer = nil)
-			if size == 0
-				if buffer
-					buffer.clear
-					buffer.force_encoding(Encoding::BINARY)
-					return buffer
-				else
-					return String.new(encoding: Encoding::BINARY)
+			synchronized do
+				if size == 0
+					if buffer
+						buffer.clear
+						buffer.force_encoding(Encoding::BINARY)
+						return buffer
+					else
+						return String.new(encoding: Encoding::BINARY)
+					end
 				end
-			end
-			
-			if size
-				until @finished or @read_buffer.bytesize >= size
-					# Compute the amount of data we need to read from the underlying stream:
-					read_size = size - @read_buffer.bytesize
+				
+				if size
+					until @finished or @read_buffer.bytesize >= size
+						# Compute the amount of data we need to read from the underlying stream:
+						read_size = size - @read_buffer.bytesize
+						
+						# Don't read less than @minimum_read_size to avoid lots of small reads:
+						fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
+					end
+				else
+					until @finished
+						fill_read_buffer
+					end
 					
-					# Don't read less than @minimum_read_size to avoid lots of small reads:
-					fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
-				end
-			else
-				until @finished
-					fill_read_buffer
-				end
-				
-				if buffer
-					buffer.replace(@read_buffer)
-					@read_buffer.clear
-				else
-					buffer = @read_buffer
-					@read_buffer = StringBuffer.new
+					if buffer
+						buffer.replace(@read_buffer)
+						@read_buffer.clear
+					else
+						buffer = @read_buffer
+						@read_buffer = StringBuffer.new
+					end
+					
+					# Read without size always returns a non-nil value, even if it is an empty string.
+					return buffer
 				end
 				
-				# Read without size always returns a non-nil value, even if it is an empty string.
-				return buffer
+				return consume_read_buffer(size, buffer)
 			end
-			
-			return consume_read_buffer(size, buffer)
 		end
 		
 		# Read at most `size` bytes from the stream. Will avoid reading from the underlying stream if possible.
 		# @parameter size [Integer | Nil] The number of bytes to read. If nil, read all available data.
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
 		# @returns [String] The data read from the stream, or the provided buffer filled with data.
-		def read_partial(size = nil, buffer = nil)
-			if size == 0
-				if buffer
-					buffer.clear
-					buffer.force_encoding(Encoding::BINARY)
-					return buffer
-				else
-					return String.new(encoding: Encoding::BINARY)
+		def read_partial(size = nil, buffer = nil)	
+			synchronized do
+				if size == 0
+					if buffer
+						buffer.clear
+						buffer.force_encoding(Encoding::BINARY)
+						return buffer
+					else
+						return String.new(encoding: Encoding::BINARY)
+					end
 				end
+				
+				if !@finished and @read_buffer.empty?
+					fill_read_buffer
+				end
+				
+				return consume_read_buffer(size, buffer)
 			end
-			
-			if !@finished and @read_buffer.empty?
-				fill_read_buffer
-			end
-			
-			return consume_read_buffer(size, buffer)
 		end
 		
 		# Read exactly the specified number of bytes.
@@ -126,15 +145,17 @@ module IO::Stream
 		# @parameter exception [Class] The exception to raise if not enough data is available.
 		# @returns [String] The data read from the stream.
 		def read_exactly(size, buffer = nil, exception: EOFError)
-			if buffer = read(size, buffer)
-				if buffer.bytesize != size
-					raise exception, "Could not read enough data!"
+			synchronized do
+				if buffer = read(size, buffer)
+					if buffer.bytesize != size
+						raise exception, "Could not read enough data!"
+					end
+					
+					return buffer
 				end
 				
-				return buffer
+				raise exception, "Stream finished before reading enough data!"
 			end
-			
-			raise exception, "Stream finished before reading enough data!"
 		end
 		
 		# This is a compatibility shim for existing code that uses `readpartial`.
@@ -142,7 +163,9 @@ module IO::Stream
 		# @parameter buffer [String | Nil] An optional buffer to fill with data instead of allocating a new string.
 		# @returns [String] The data read from the stream.
 		def readpartial(size = nil, buffer = nil)
-			read_partial(size, buffer) or raise EOFError, "Stream finished before reading enough data!"
+			synchronized do
+				read_partial(size, buffer) or raise EOFError, "Stream finished before reading enough data!"
+			end
 		end
 		
 		# Find the index of a pattern in the read buffer, reading more data if needed.
@@ -184,14 +207,16 @@ module IO::Stream
 		# @parameter chomp [Boolean] Whether to remove the pattern from the returned data.
 		# @returns [String | Nil] The contents of the stream up until the pattern, or nil if the pattern was not found. 
 		def read_until(pattern, offset = 0, limit: nil, chomp: true)
-			if index = index_of(pattern, offset, limit)
-				return nil if limit and index >= limit
-				
-				@read_buffer.freeze
-				matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
-				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
-				
-				return matched
+			synchronized do
+				if index = index_of(pattern, offset, limit)
+					return nil if limit and index >= limit
+					
+					@read_buffer.freeze
+					matched = @read_buffer.byteslice(0, index+(chomp ? 0 : pattern.bytesize))
+					@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
+					
+					return matched
+				end
 			end
 		end
 		
@@ -201,19 +226,21 @@ module IO::Stream
 		# @parameter limit [Integer] The maximum number of bytes to read, including the pattern.
 		# @returns [String | Nil] The contents of the stream up until the pattern, or nil if the pattern was not found.
 		def discard_until(pattern, offset = 0, limit: nil)
-			if index = index_of(pattern, offset, limit, true)
-				@read_buffer.freeze
-				
-				if limit and index >= limit
-					@read_buffer = @read_buffer.byteslice(limit, @read_buffer.bytesize)
+			synchronized do
+				if index = index_of(pattern, offset, limit, true)
+					@read_buffer.freeze
 					
-					return nil
+					if limit and index >= limit
+						@read_buffer = @read_buffer.byteslice(limit, @read_buffer.bytesize)
+						
+						return nil
+					end
+					
+					matched = @read_buffer.byteslice(0, index+pattern.bytesize)
+					@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
+					
+					return matched
 				end
-				
-				matched = @read_buffer.byteslice(0, index+pattern.bytesize)
-				@read_buffer = @read_buffer.byteslice(index+pattern.bytesize, @read_buffer.bytesize)
-				
-				return matched
 			end
 		end
 		
@@ -221,20 +248,22 @@ module IO::Stream
 		# @parameter size [Integer | Nil] The number of bytes to peek at. If nil, peek at all available data.
 		# @returns [String] The data in the buffer without consuming it.
 		def peek(size = nil)
-			if size
-				until @finished or @read_buffer.bytesize >= size
-					# Compute the amount of data we need to read from the underlying stream:
-					read_size = size - @read_buffer.bytesize
-					
-					# Don't read less than @minimum_read_size to avoid lots of small reads:
-					fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
+			synchronized do
+				if size
+					until @finished or @read_buffer.bytesize >= size
+						# Compute the amount of data we need to read from the underlying stream:
+						read_size = size - @read_buffer.bytesize
+						
+						# Don't read less than @minimum_read_size to avoid lots of small reads:
+						fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
+					end
+					return @read_buffer[..([size, @read_buffer.size].min - 1)]
 				end
-				return @read_buffer[..([size, @read_buffer.size].min - 1)]
+				until (block_given? && yield(@read_buffer)) or @finished
+					fill_read_buffer
+				end
+				return @read_buffer
 			end
-			until (block_given? && yield(@read_buffer)) or @finished
-				fill_read_buffer
-			end
-			return @read_buffer
 		end
 		
 		# Read a line from the stream, similar to IO#gets.
@@ -243,44 +272,46 @@ module IO::Stream
 		# @parameter chomp [Boolean] Whether to remove the separator from the returned line.
 		# @returns [String | Nil] The line read from the stream, or nil if at end of stream.
 		def gets(separator = $/, limit = nil, chomp: false)
-			# Compatibility with IO#gets:
-			if separator.is_a?(Integer)
-				limit = separator
-				separator = $/
-			end
-			
-			# We don't want to split in the middle of the separator, so we subtract the size of the separator from the start of the search:
-			split_offset = separator.bytesize - 1
-			
-			offset = 0
-			
-			until index = @read_buffer.index(separator, offset)
-				offset = @read_buffer.bytesize - split_offset
-				offset = 0 if offset < 0
+			synchronized do
+				# Compatibility with IO#gets:
+				if separator.is_a?(Integer)
+					limit = separator
+					separator = $/
+				end
 				
-				# If a limit was given, and the offset is beyond the limit, we should return up to the limit:
-				if limit and offset >= limit
-					# As we didn't find the separator, there is nothing to chomp either.
+				# We don't want to split in the middle of the separator, so we subtract the size of the separator from the start of the search:
+				split_offset = separator.bytesize - 1
+				
+				offset = 0
+				
+				until index = @read_buffer.index(separator, offset)
+					offset = @read_buffer.bytesize - split_offset
+					offset = 0 if offset < 0
+					
+					# If a limit was given, and the offset is beyond the limit, we should return up to the limit:
+					if limit and offset >= limit
+						# As we didn't find the separator, there is nothing to chomp either.
+						return consume_read_buffer(limit)
+					end
+					
+					# If we can't read any more data, we should return what we have:
+					return consume_read_buffer unless fill_read_buffer
+				end
+				
+				# If the index of the separator was beyond the limit:
+				if limit and index >= limit
+					# Return up to the limit:
 					return consume_read_buffer(limit)
 				end
 				
-				# If we can't read any more data, we should return what we have:
-				return consume_read_buffer unless fill_read_buffer
+				# Freeze the read buffer, as this enables us to use byteslice without generating a hidden copy:
+				@read_buffer.freeze
+				
+				line = @read_buffer.byteslice(0, index+(chomp ? 0 : separator.bytesize))
+				@read_buffer = @read_buffer.byteslice(index+separator.bytesize, @read_buffer.bytesize)
+				
+				return line
 			end
-			
-			# If the index of the separator was beyond the limit:
-			if limit and index >= limit
-				# Return up to the limit:
-				return consume_read_buffer(limit)
-			end
-			
-			# Freeze the read buffer, as this enables us to use byteslice without generating a hidden copy:
-			@read_buffer.freeze
-			
-			line = @read_buffer.byteslice(0, index+(chomp ? 0 : separator.bytesize))
-			@read_buffer = @read_buffer.byteslice(index+separator.bytesize, @read_buffer.bytesize)
-			
-			return line
 		end
 		
 		# Determins if the stream has consumed all available data. May block if the stream is not readable.
@@ -401,6 +432,7 @@ module IO::Stream
 				else
 					result = @read_buffer.byteslice(0, size)
 				end
+				
 				@read_buffer = @read_buffer.byteslice(size, @read_buffer.bytesize)
 			end
 			
