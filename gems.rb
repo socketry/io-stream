@@ -31,4 +31,6 @@ group :test do
 	
 	gem "sus-fixtures-async"
 	gem "sus-fixtures-openssl"
+	
+	gem "async-safe"
 end

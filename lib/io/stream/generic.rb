@@ -18,6 +18,14 @@ module IO::Stream
 		include Readable
 		include Writable
 		
+		# Check if a method is async-safe.
+		#
+		# @parameter method [Symbol] The method name to check.
+		# @returns [Symbol | Boolean] The concurrency guard for the given method.
+		def self.async_safe?(method)
+			Readable.async_safe?(method) || Writable.async_safe?(method)
+		end
+		
 		# Initialize a new generic stream.
 		# @parameter options [Hash] Options passed to included modules.
 		def initialize(**options)

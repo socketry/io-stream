@@ -13,6 +13,20 @@ module IO::Stream
 	#
 	# You must implement the `syswrite` method to write data to the underlying IO.
 	module Writable
+		ASYNC_SAFE = {
+			write: true,
+			puts: true,
+			flush: true,
+		}.freeze
+		
+		# Check if a method is async-safe.
+		#
+		# @parameter method [Symbol] The method name to check.
+		# @returns [Symbol | Boolean] The concurrency guard for the given method.
+		def self.async_safe?(method)
+			ASYNC_SAFE.fetch(method, false)
+		end
+		
 		# Initialize writable stream functionality.
 		# @parameter minimum_write_size [Integer] The minimum buffer size before flushing.
 		def initialize(minimum_write_size: MINIMUM_WRITE_SIZE, **, &block)

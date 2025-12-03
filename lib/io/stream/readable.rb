@@ -25,6 +25,31 @@ module IO::Stream
 	#
 	# You must implement the `sysread` method to read data from the underlying IO.
 	module Readable
+		ASYNC_SAFE = {
+			read: :readable,
+			read_partial: :readable,
+			read_exactly: :readable,
+			read_until: :readable,
+			peek: :readable,
+			gets: :readable,
+			getc: :readable,
+			getbyte: :readable,
+			readline: :readable,
+			readlines: :readable,
+			readable?: :readable,
+			fill_read_buffer: :readable,
+			eof?: :readable,
+			finished?: :readable,
+		}.freeze
+		
+		# Check if a method is async-safe.
+		#
+		# @parameter method [Symbol] The method name to check.
+		# @returns [Symbol | Boolean] The concurrency guard for the given method.
+		def self.async_safe?(method)
+			ASYNC_SAFE.fetch(method, false)
+		end
+		
 		# Initialize readable stream functionality.
 		# @parameter minimum_read_size [Integer] The minimum size for read operations.
 		# @parameter maximum_read_size [Integer] The maximum size for read operations.
