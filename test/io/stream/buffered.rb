@@ -1011,6 +1011,8 @@ describe "IO.pipe" do
 end
 
 describe "Socket.pair" do
+	include Sus::Fixtures::Async::ReactorContext
+	
 	let(:sockets) {Socket.pair(:UNIX, :STREAM)}
 	let(:client) {IO::Stream::Buffered.wrap(sockets[0])}
 	let(:server) {IO::Stream::Buffered.wrap(sockets[1])}
@@ -1022,6 +1024,29 @@ describe "Socket.pair" do
 	
 	it_behaves_like AUnidirectionalStream
 	it_behaves_like ABidirectionalStream
+	
+	it "flushes pending writes even when read buffer already has data" do
+		# When read-ahead pulls more data than requested, a subsequent read can
+		# complete from the buffer without calling fill_read_buffer — skipping
+		# flush. This test verifies that pending writes are still flushed.
+		task_a = reactor.async do
+			client.write("A1")
+			data = client.read_exactly(2)
+			client.write("A2")
+			client.read_exactly(2)
+		end
+		
+		task_b = reactor.async do
+			server.write("B1")
+			server.read_exactly(2)
+			server.write("B2")
+			server.read_exactly(2)
+		end
+		
+		# Without the fix, this deadlocks because A2 is never flushed.
+		task_a.wait
+		task_b.wait
+	end
 end
 
 describe TCPSocket do
