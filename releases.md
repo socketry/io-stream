@@ -3,6 +3,7 @@
 ## Unreleased
 
   - Remove old OpenSSL method shims.
+  - Ensure `IO::Stream::Readable#read` calls `#flush` even if buffered data is sufficient to satisfy the read, to maintain consistent behavior.
 
 ## v0.11.0
 
