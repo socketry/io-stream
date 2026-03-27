@@ -97,18 +97,19 @@ module IO::Stream
 			end
 			
 			if size
-				# Ensure pending writes are flushed before we read, even when the
-				# read buffer already has enough data from a previous read-ahead.
-				# Without this, a bidirectional protocol can deadlock: our write
-				# sits in the buffer while the peer blocks waiting for it.
-				flush
-				
-				until @finished or @read_buffer.bytesize >= size
-					# Compute the amount of data we need to read from the underlying stream:
-					read_size = size - @read_buffer.bytesize
-					
-					# Don't read less than @minimum_read_size to avoid lots of small reads:
-					fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
+				if @finished or @read_buffer.bytesize >= size
+					# We have enough data in the read buffer, but we should still flush pending writes:
+					self.flush
+				else
+					while true
+						# Compute the amount of data we need to read from the underlying stream:
+						read_size = size - @read_buffer.bytesize
+						
+						# Don't read less than @minimum_read_size to avoid lots of small reads:
+						fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
+						
+						break if @finished or @read_buffer.bytesize >= size
+					end
 				end
 			else
 				until @finished
