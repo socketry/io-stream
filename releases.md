@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Remove old OpenSSL method shims.
+
 ## v0.11.0
 
   - Introduce `class IO::Stream::ConnectionResetError < Errno::ECONNRESET` to standardize connection reset error handling across different IO types.
