@@ -254,11 +254,14 @@ module IO::Stream
 					# Don't read less than @minimum_read_size to avoid lots of small reads:
 					fill_read_buffer(read_size > @minimum_read_size ? read_size : @minimum_read_size)
 				end
+				
 				return @read_buffer[..([size, @read_buffer.size].min - 1)]
 			end
+			
 			until (block_given? && yield(@read_buffer)) or @finished
 				fill_read_buffer
 			end
+			
 			return @read_buffer
 		end
 		
@@ -366,7 +369,7 @@ module IO::Stream
 			end
 			
 			# This effectively ties the input and output stream together.
-			flush
+			self.flush
 			
 			if @read_buffer.empty?
 				if sysread(size, @read_buffer)
