@@ -4,13 +4,27 @@ Provide a buffered stream implementation for Ruby, independent of the underlying
 
 [![Development Status](https://github.com/socketry/io-stream/workflows/Test/badge.svg)](https://github.com/socketry/io-stream/actions?workflow=Test)
 
+## Motivation
+
+I built this gem because working with IO in Ruby can be surprisingly difficult. Ruby provides buffering, but the inconsistencies between different IO types made it impossible to write clean, generic code. `OpenSSL::SSL::SSLSocket` maintains its own buffering implementation that behaves differently from regular IO. Some IO types raise `OpenSSL::SSL::SSLError` on connection reset while others raise `Errno::ECONNRESET`. EOF semantics vary. Close operations can hang (especially with SSL sockets). And if you want to work with non-blocking IO using `read_nonblock` and `write_nonblock`, you're constantly handling `:wait_readable` and `:wait_writable` conditions, managing timeouts, and dealing with edge cases that differ across implementations.
+
+By providing a standard interface for buffered IO, `io-stream` allows you to write code that works the same way regardless of the underlying IO type. You can wrap any IO object and get consistent buffering behavior, unified error handling, and proper management of blocking/non-blocking operations. This makes it much easier to write high-performance IO code without worrying about the quirks of each specific IO implementation. Over time, as we've upstreamed more fixes into Ruby, we've been able to reduce the number of workarounds needed, but the core value of `io-stream` remains: a single, predictable interface for all your IO needs.
+
 ## Usage
 
-Please see the [project documentation](https://socketry.github.io/io-stream) for more details.
+Please see the [project documentation](https://socketry.github.io/io-stream/) for more details.
+
+  - [Getting Started](https://socketry.github.io/io-stream/guides/getting-started/index) - This guide explains how to use `io-stream` to add efficient buffering to Ruby IO objects.
+
+  - [High Performance IO](https://socketry.github.io/io-stream/guides/high-performance-io/index) - This guide explains how to achieve optimal performance when using `io-stream` by understanding and controlling flush behavior.
 
 ## Releases
 
-Please see the [project releases](https://socketry.github.io/io-streamreleases/index) for all releases.
+Please see the [project releases](https://socketry.github.io/io-stream/releases/index) for all releases.
+
+### Unreleased
+
+  - Remove old OpenSSL method shims.
 
 ### v0.11.0
 
@@ -52,12 +66,6 @@ Please see the [project releases](https://socketry.github.io/io-streamreleases/i
 
   - Add support for `read_until(limit:)` parameter to limit the amount of data read.
   - Minor documentation improvements.
-
-### v0.4.3
-
-  - Add comprehensive tests for `buffered?` method on `SSLSocket`.
-  - Ensure TLS connections have correct buffering behavior.
-  - Improve test suite organization and readability.
 
 ## See Also
 

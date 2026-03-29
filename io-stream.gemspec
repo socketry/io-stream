@@ -16,11 +16,11 @@ Gem::Specification.new do |spec|
 	spec.homepage = "https://github.com/socketry/io-stream"
 	
 	spec.metadata = {
-		"documentation_uri" => "https://socketry.github.io/io-stream",
+		"documentation_uri" => "https://socketry.github.io/io-stream/",
 		"source_code_uri" => "https://github.com/socketry/io-stream.git",
 	}
 	
-	spec.files = Dir.glob(["{lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
+	spec.files = Dir.glob(["{context,lib}/**/*", "*.md"], File::FNM_DOTMATCH, base: __dir__)
 	
 	spec.required_ruby_version = ">= 3.3"
 end
