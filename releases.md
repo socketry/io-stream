@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.12.0
 
   - Introduce `IO::Stream::Duplex` as a low-level duplex transport for composing separate input and output endpoints.
   - Add `IO::Stream::Duplex(input, output)` as a convenient constructor that returns a buffered stream wrapping a duplex transport.
