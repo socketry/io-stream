@@ -1,15 +1,19 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2023-2025, by Samuel Williams.
+# Copyright, 2023-2026, by Samuel Williams.
 
 require_relative "stream/version"
 require_relative "stream/buffered"
+require_relative "stream/duplex"
 
 # @namespace
 class IO
 	# @namespace
 	module Stream
+		def self.Duplex(input, output = input, **options)
+			Buffered.wrap(Duplex.new(input, output), **options)
+		end
 	end
 	
 	# Convert any IO-like object into a buffered stream.

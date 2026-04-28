@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+  - Introduce `IO::Stream::Duplex` as a low-level duplex transport for composing separate input and output endpoints.
+  - Add `IO::Stream::Duplex(input, output)` as a convenient constructor that returns a buffered stream wrapping a duplex transport.
+  - Add a timeout compatibility shim for `StringIO` so duplex streams composed from in-memory endpoints can participate in the timeout interface consistently.
   - Remove old OpenSSL method shims.
 
 ## v0.11.0

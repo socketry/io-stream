@@ -13,19 +13,21 @@ describe "IO.pipe" do
 	let(:client) {IO::Stream::Buffered.wrap(pipe[0])}
 	let(:server) {IO::Stream::Buffered.wrap(pipe[1])}
 	
-	def after(error = nil)
+	after do
 		pipe.each(&:close)
-		super
 	end
 	
 	it "can close while writing" do
 		message = "." * 1024 * 128
 		
 		task = reactor.async do
-			while true
+			loop do
 				# $stderr.puts "-> write"
 				server.write(message)
 				# $stderr.puts "<- write"
+			rescue IOError => error
+				expect(error.message).to be =~ /closed/
+				break
 			end
 		end
 		
