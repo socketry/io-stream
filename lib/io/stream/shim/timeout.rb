@@ -7,12 +7,17 @@ require "stringio"
 
 class StringIO
 	unless method_defined?(:timeout)
+		# Return the configured timeout for this in-memory stream.
+		# @returns [Numeric | Nil] The configured timeout, if any.
 		def timeout
 			@timeout
 		end
 	end
 	
 	unless method_defined?(:timeout=)
+		# Store timeout state for compatibility with IO-like timeout interfaces.
+		# @parameter duration [Numeric | Nil] The timeout to assign.
+		# @returns [Numeric | Nil] The assigned timeout.
 		def timeout=(duration)
 			@timeout = duration
 		end
