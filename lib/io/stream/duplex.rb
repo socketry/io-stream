@@ -106,4 +106,17 @@ module IO::Stream
 			@output.wait_writable(duration)
 		end
 	end
+	
+	# Construct a buffered stream from either one duplex IO-like object or two separate endpoints.
+	# @parameter input [IO] The duplex IO object, or the readable endpoint.
+	# @parameter output [IO | Nil] The writable endpoint, when distinct from the readable endpoint.
+	# @parameter options [Hash] Additional options passed to the buffered stream wrapper.
+	# @returns [IO::Stream::Buffered] A buffered stream wrapping the supplied transport.
+	def self.Duplex(input, output = nil, **options)
+		if output
+			Buffered.wrap(Duplex.new(input, output), **options)
+		else
+			::IO.Stream(input)
+		end
+	end
 end

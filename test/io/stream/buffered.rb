@@ -1073,8 +1073,8 @@ describe OpenSSL::SSL::SSLSocket do
 		server.sync_close = true
 		
 		[
-			Async{server.accept},
-			Async{client.connect}
+			Async {server.accept},
+			Async {client.connect}
 		].each(&:wait)
 		
 		@client = IO::Stream::Buffered.wrap(client)

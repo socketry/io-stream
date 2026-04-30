@@ -35,6 +35,15 @@ describe IO::Stream::Duplex do
 	end
 	
 	with "::Duplex" do
+		it "wraps a single duplex IO directly" do
+			io = StringIO.new
+			
+			stream = IO::Stream::Duplex(io)
+			
+			expect(stream).to be_a(IO::Stream::Buffered)
+			expect(stream.io).to be_equal(io)
+		end
+		
 		it "returns a buffered stream wrapping a duplex IO" do
 			pipes = make_pipes
 			

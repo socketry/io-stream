@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - `IO::Stream::Duplex(io)` is equivalent to `IO::Stream(io)`.
+
 ## v0.12.0
 
   - Introduce `IO::Stream::Duplex` as a low-level duplex transport for composing separate input and output endpoints.
