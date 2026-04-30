@@ -22,6 +22,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream/) fo
 
 Please see the [project releases](https://socketry.github.io/io-stream/releases/index) for all releases.
 
+### v0.13.0
+
+  - `IO::Stream::Duplex(io)` is equivalent to `IO::Stream(io)`.
+
 ### v0.12.0
 
   - Introduce `IO::Stream::Duplex` as a low-level duplex transport for composing separate input and output endpoints.
@@ -64,11 +68,6 @@ Please see the [project releases](https://socketry.github.io/io-stream/releases/
 ### v0.6.0
 
   - Improve compatibility of `gets` implementation to better match Ruby's IO\#gets behavior.
-
-### v0.5.0
-
-  - Add support for `read_until(limit:)` parameter to limit the amount of data read.
-  - Minor documentation improvements.
 
 ## See Also
 

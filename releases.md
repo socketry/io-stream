@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.13.0
 
   - `IO::Stream::Duplex(io)` is equivalent to `IO::Stream(io)`.
 
