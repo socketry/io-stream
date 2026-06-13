@@ -20,8 +20,6 @@ jobs:
           - macos
         
         ruby:
-          - 3.3
-          - 3.4
           - ruby
     
     steps:

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Released under the MIT License.
-# Copyright, 2024-2025, by Samuel Williams.
+# Copyright, 2024-2026, by Samuel Williams.
 
 require "io/stream/buffered"
 require "tempfile"
@@ -1073,8 +1073,8 @@ describe OpenSSL::SSL::SSLSocket do
 		server.sync_close = true
 		
 		[
-			Async {server.accept},
-			Async {client.connect}
+			Async{server.accept},
+			Async{client.connect}
 		].each(&:wait)
 		
 		@client = IO::Stream::Buffered.wrap(client)

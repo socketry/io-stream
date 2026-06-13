@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.
+
 ## v0.13.0
 
   - `IO::Stream::Duplex(io)` is equivalent to `IO::Stream(io)`.
