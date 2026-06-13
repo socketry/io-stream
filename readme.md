@@ -22,6 +22,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream/) fo
 
 Please see the [project releases](https://socketry.github.io/io-stream/releases/index) for all releases.
 
+### v0.13.1
+
+  - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.
+
 ### v0.13.0
 
   - `IO::Stream::Duplex(io)` is equivalent to `IO::Stream(io)`.
@@ -64,10 +68,6 @@ Please see the [project releases](https://socketry.github.io/io-stream/releases/
 ### v0.6.1
 
   - Fix compatibility with Ruby v3.3.0 - v3.3.6 where broken `@io.close` could hang.
-
-### v0.6.0
-
-  - Improve compatibility of `gets` implementation to better match Ruby's IO\#gets behavior.
 
 ## See Also
 

@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.13.1
 
   - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.
 
