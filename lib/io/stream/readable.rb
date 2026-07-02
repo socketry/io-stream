@@ -36,7 +36,7 @@ module IO::Stream
 			getbyte: :readable,
 			readline: :readable,
 			readlines: :readable,
-			readable?: :readable,
+			readable?: true,
 			fill_read_buffer: :readable,
 			eof?: :readable,
 			finished?: :readable,
