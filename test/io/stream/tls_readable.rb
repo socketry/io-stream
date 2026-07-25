@@ -30,10 +30,15 @@ describe IO::Stream::Buffered do
 		client.sync_close = true
 		server.sync_close = true
 		
-		[
-			Async {server.accept},
-			Async {client.connect},
-		].each(&:wait)
+		accept = Async do
+			server.accept
+		end
+		
+		connect = Async do
+			client.connect
+		end
+		
+		[accept, connect].each(&:wait)
 		
 		@client = IO::Stream::Buffered.wrap(client)
 		@server = IO::Stream::Buffered.wrap(server)
