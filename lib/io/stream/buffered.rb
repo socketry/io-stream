@@ -6,6 +6,7 @@
 require_relative "generic"
 require_relative "connection_reset_error"
 
+# Provides buffered IO streams with consistent read, write, and transport semantics.
 module IO::Stream
 	# A buffered stream implementation that wraps an underlying IO object to provide efficient buffered reading and writing.
 	class Buffered < Generic
@@ -91,7 +92,16 @@ module IO::Stream
 		# Check if the stream is readable.
 		# @returns [Boolean] True if the stream is readable.
 		def readable?
-			unless super
+			super && @io.readable?
+		end
+		
+		# Probe whether the stream can be read without blocking.
+		#
+		# This operation may consume one byte from the wrapped IO. Any byte consumed is preserved in the read buffer. It must not be called concurrently with another read operation.
+		#
+		# @returns [Boolean] True if the stream is readable.
+		def probe_readable?
+			unless readable?
 				return false
 			end
 			

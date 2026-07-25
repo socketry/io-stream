@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-  - Probe readability through layered transports so a TLS `close_notify` is detected before reusing a connection.
+  - Add `IO::Stream::Buffered#probe_readable?` to probe through layered transports and detect a TLS `close_notify`.
 
 ## v0.13.1
 
