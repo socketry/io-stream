@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-  - Add `IO::Stream::Buffered#probe_readable?` to probe through layered transports and detect a TLS `close_notify`.
+  - Add `IO::Stream::Readable#peek_partial` to peek through layered transports without blocking or consuming application data.
 
 ## v0.13.1
 

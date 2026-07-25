@@ -64,8 +64,8 @@ describe IO::Stream::Buffered do
 		
 		@sockets[0].wait_readable(1)
 		
-		expect(client).not.to be(:probe_readable?)
-		expect(client).not.to be(:probe_readable?)
+		expect(client.peek_partial(1)).to be_nil
+		expect(client.peek_partial(1)).to be_nil
 		closing.wait
 	end
 	
@@ -75,11 +75,15 @@ describe IO::Stream::Buffered do
 		
 		@sockets.first.wait_readable(1)
 		
-		expect(client).not.to be(:probe_readable?)
+		expect do
+			client.peek_partial(1)
+		end.to raise_exception(OpenSSL::SSL::SSLError)
 	end
 	
-	it "reports an open TLS connection as probe readable" do
-		expect(client).to be(:probe_readable?)
+	it "reports when reading an open TLS connection would block" do
+		expect(client.peek_partial(0)).to be == ""
+		expect(client.peek_partial(1)).to be_nil
+		expect(client).to be(:readable?)
 	end
 	
 	it "preserves data consumed by the readability probe" do
@@ -88,8 +92,8 @@ describe IO::Stream::Buffered do
 		
 		@sockets[0].wait_readable(1)
 		
-		expect(client).to be(:probe_readable?)
-		expect(client).to be(:probe_readable?)
+		expect(client.peek_partial(1)).to be == "H"
+		expect(client.peek_partial(1)).to be == "H"
 		expect(client.read(5)).to be == "Hello"
 	end
 end

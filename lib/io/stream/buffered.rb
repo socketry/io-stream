@@ -95,40 +95,6 @@ module IO::Stream
 			super && @io.readable?
 		end
 		
-		# Probe whether the stream can be read without blocking.
-		#
-		# This operation may consume one byte from the wrapped IO. Any byte consumed is preserved in the read buffer. It must not be called concurrently with another read operation.
-		#
-		# @returns [Boolean] True if the stream is readable.
-		def probe_readable?
-			unless readable?
-				return false
-			end
-			
-			unless @read_buffer.empty?
-				return true
-			end
-			
-			# Probe through the wrapped IO rather than its underlying descriptor. This is
-			# important for layered transports such as TLS, where encrypted data on the
-			# socket may decode to an EOF (close_notify). Preserve any byte consumed by
-			# the probe in the stream's read buffer.
-			result = @io.read_nonblock(1, @read_buffer, exception: false)
-			
-			case result
-			when :wait_readable, :wait_writable
-				return true
-			when nil
-				@finished = true
-				return false
-			else
-				return true
-			end
-		rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::EBADF, IOError
-			@finished = true
-			return false
-		end
-		
 		protected
 		
 		def sysclose
@@ -137,6 +103,11 @@ module IO::Stream
 		
 		def syswrite(buffer)
 			return @io.write(buffer)
+		end
+		
+		# Attempts to read data from the underlying stream without blocking.
+		def sysread_nonblock(size, buffer)
+			return @io.read_nonblock(size, buffer, exception: false)
 		end
 		
 		# Reads data from the underlying stream as efficiently as possible.
