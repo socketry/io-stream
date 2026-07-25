@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Probe readability through layered transports so a TLS `close_notify` is detected before reusing a connection.
+
 ## v0.13.1
 
   - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.

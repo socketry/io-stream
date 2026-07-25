@@ -91,7 +91,34 @@ module IO::Stream
 		# Check if the stream is readable.
 		# @returns [Boolean] True if the stream is readable.
 		def readable?
-			super && @io.readable?
+			return false unless super
+			return true unless @read_buffer.empty?
+			
+			# Probe through the wrapped IO rather than its underlying descriptor. This is
+			# important for layered transports such as TLS, where encrypted data on the
+			# socket may decode to an EOF (close_notify). Preserve any byte consumed by
+			# the probe in the stream's read buffer.
+			result = @io.read_nonblock(1, @read_buffer, exception: false)
+			
+			case result
+			when :wait_readable, :wait_writable
+				return true
+			when nil
+				@finished = true
+				return false
+			else
+				return true
+			end
+		rescue OpenSSL::SSL::SSLError => error
+			if error.message =~ /unexpected eof while reading/
+				@finished = true
+				return false
+			end
+			
+			raise
+		rescue Errno::ECONNRESET, Errno::EBADF, IOError
+			@finished = true
+			return false
 		end
 		
 		protected
