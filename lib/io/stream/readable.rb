@@ -23,7 +23,7 @@ module IO::Stream
 	
 	# A module providing readable stream functionality.
 	#
-	# You must implement the `sysread` and `sysread_nonblock` methods to read data from the underlying IO.
+	# You must implement the `sysread` method to read data from the underlying IO. You may implement `sysread_nonblock` to support non-blocking partial peeks.
 	module Readable
 		ASYNC_SAFE = {
 			read: :readable,
@@ -395,6 +395,12 @@ module IO::Stream
 		end
 		
 		private
+		
+		# Attempts to read data from the underlying stream without blocking.
+		# Implementations may override this method when non-blocking reads are supported.
+		def sysread_nonblock(size, buffer)
+			return :wait_readable
+		end
 		
 		# Fills the buffer from the underlying stream.
 		def fill_read_buffer(size = @minimum_read_size)
