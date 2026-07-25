@@ -63,6 +63,15 @@ describe IO::Stream::Buffered do
 		closing.wait
 	end
 	
+	it "detects an abrupt TLS connection close" do
+		@sockets.last.close
+		@server = nil
+		
+		@sockets.first.wait_readable(1)
+		
+		expect(client).not.to be(:readable?)
+	end
+	
 	it "preserves data consumed by the readability probe" do
 		server.write("Hello")
 		server.flush

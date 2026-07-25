@@ -114,14 +114,7 @@ module IO::Stream
 			else
 				return true
 			end
-		rescue OpenSSL::SSL::SSLError => error
-			if error.message =~ /unexpected eof while reading/
-				@finished = true
-				return false
-			end
-			
-			raise
-		rescue Errno::ECONNRESET, Errno::EBADF, IOError
+		rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET, Errno::EBADF, IOError
 			@finished = true
 			return false
 		end
