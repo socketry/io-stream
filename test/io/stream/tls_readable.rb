@@ -42,7 +42,11 @@ describe IO::Stream::Buffered do
 	after do
 		@client&.close
 		@server&.close
-		@sockets.each{|socket| socket.close unless socket.closed?}
+		@sockets.each do |socket|
+			unless socket.closed?
+				socket.close
+			end
+		end
 	end
 	
 	attr :client

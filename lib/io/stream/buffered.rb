@@ -91,8 +91,13 @@ module IO::Stream
 		# Check if the stream is readable.
 		# @returns [Boolean] True if the stream is readable.
 		def readable?
-			return false unless super
-			return true unless @read_buffer.empty?
+			unless super
+				return false
+			end
+			
+			unless @read_buffer.empty?
+				return true
+			end
 			
 			# Probe through the wrapped IO rather than its underlying descriptor. This is
 			# important for layered transports such as TLS, where encrypted data on the
