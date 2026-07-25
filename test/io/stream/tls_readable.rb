@@ -64,8 +64,9 @@ describe IO::Stream::Buffered do
 		
 		@sockets[0].wait_readable(1)
 		
+		expect(client.peek_partial(0)).to be_nil
 		expect(client.peek_partial(1)).to be_nil
-		expect(client.peek_partial(1)).to be_nil
+		expect(client).not.to be(:readable?)
 		closing.wait
 	end
 	
@@ -81,7 +82,7 @@ describe IO::Stream::Buffered do
 	end
 	
 	it "reports when reading an open TLS connection would block" do
-		expect(client.peek_partial(0)).to be == ""
+		expect(client.peek_partial(0)).to be_nil
 		expect(client.peek_partial(1)).to be_nil
 		expect(client).to be(:readable?)
 	end
@@ -92,7 +93,7 @@ describe IO::Stream::Buffered do
 		
 		@sockets[0].wait_readable(1)
 		
-		expect(client.peek_partial(1)).to be == "H"
+		expect(client.peek_partial(0)).to be == ""
 		expect(client.peek_partial(1)).to be == "H"
 		expect(client.read(5)).to be == "Hello"
 	end
