@@ -247,6 +247,10 @@ module IO::Stream
 		# @parameter size [Integer | Nil] The number of bytes to peek at. If nil, peek at all available data.
 		# @returns [String] The data in the buffer without consuming it.
 		def peek(size = nil)
+			if size == 0
+				return String.new(encoding: Encoding::BINARY)
+			end
+			
 			if size
 				until @finished or @read_buffer.bytesize >= size
 					# Compute the amount of data we need to read from the underlying stream:
@@ -273,21 +277,20 @@ module IO::Stream
 		#
 		# After this method returns `nil`, {readable?} indicates whether the read would
 		# block or EOF was observed.
-		# A size of zero still performs the read attempt, returning an empty string if
-		# data was available and preserving that data in the read buffer.
 		#
 		# @parameter size [Integer] The maximum number of bytes to peek at.
 		# @returns [String | Nil] The immediately available data, or nil if no data can be read without blocking.
 		def peek_partial(size = @minimum_read_size)
+			if size == 0
+				return String.new(encoding: Encoding::BINARY)
+			end
+			
 			if @read_buffer.empty?
 				if @finished
 					return nil
 				end
 				
 				read_size = [size, @maximum_read_size].min
-				if read_size == 0
-					read_size = @minimum_read_size
-				end
 				
 				result = sysread_nonblock(read_size, @read_buffer)
 				case result
