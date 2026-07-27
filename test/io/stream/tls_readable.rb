@@ -78,7 +78,20 @@ describe IO::Stream::Buffered do
 		
 		expect do
 			client.peek_partial(1)
-		end.to raise_exception(OpenSSL::SSL::SSLError)
+		end.to raise_exception(IO::Stream::ConnectionResetError)
+	end
+	
+	it "preserves other TLS errors" do
+		io = Object.new
+		def io.read_nonblock(...)
+			raise OpenSSL::SSL::SSLError, "TLS protocol error"
+		end
+		
+		stream = IO::Stream::Buffered.new(io)
+		
+		expect do
+			stream.peek_partial(1)
+		end.to raise_exception(OpenSSL::SSL::SSLError, message: be == "TLS protocol error")
 	end
 	
 	it "reports when reading an open TLS connection would block" do

@@ -107,28 +107,40 @@ module IO::Stream
 		
 		# Attempts to read data from the underlying stream without blocking.
 		def sysread_nonblock(size, buffer)
-			return @io.read_nonblock(size, buffer, exception: false)
+			normalize_read_errors do
+				@io.read_nonblock(size, buffer, exception: false)
+			end
 		end
 		
 		# Reads data from the underlying stream as efficiently as possible.
 		def sysread(size, buffer)
-			# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
-			while true
-				result = @io.read_nonblock(size, buffer, exception: false)
-				
-				case result
-				when :wait_readable
-					@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
-				when :wait_writable
-					@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
-				else
-					return result
+			normalize_read_errors do
+				# Come on Ruby, why couldn't this just return `nil`? EOF is not exceptional. Every file has one.
+				while true
+					result = @io.read_nonblock(size, buffer, exception: false)
+					
+					case result
+					when :wait_readable
+						@io.wait_readable(@io.timeout) or raise ::IO::TimeoutError, "read timeout"
+					when :wait_writable
+						@io.wait_writable(@io.timeout) or raise ::IO::TimeoutError, "write timeout"
+					else
+						break result
+					end
 				end
 			end
+		end
+		
+		private
+		
+		def normalize_read_errors
+			return yield
 		rescue OpenSSL::SSL::SSLError => error
 			if error.message =~ /unexpected eof while reading/
 				raise ConnectionResetError, "Connection reset by peer!"
 			end
+			
+			raise
 		rescue Errno::ECONNRESET
 			raise ConnectionResetError, "Connection reset by peer!"
 		rescue Errno::EBADF
