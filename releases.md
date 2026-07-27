@@ -1,6 +1,6 @@
 # Releases
 
-## Unreleased
+## v0.14.0
 
   - Add `IO::Stream::Readable#peek_partial` to peek through layered transports without blocking or consuming application data.
 

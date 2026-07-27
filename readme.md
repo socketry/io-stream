@@ -22,6 +22,10 @@ Please see the [project documentation](https://socketry.github.io/io-stream/) fo
 
 Please see the [project releases](https://socketry.github.io/io-stream/releases/index) for all releases.
 
+### v0.14.0
+
+  - Add `IO::Stream::Readable#peek_partial` to peek through layered transports without blocking or consuming application data.
+
 ### v0.13.1
 
   - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.
@@ -64,10 +68,6 @@ Please see the [project releases](https://socketry.github.io/io-stream/releases/
   - Split stream functionality into separate `Readable` and `Writable` modules for better modularity and composition.
   - Remove unused timeout shim functionality.
   - 100% documentation coverage.
-
-### v0.6.1
-
-  - Fix compatibility with Ruby v3.3.0 - v3.3.6 where broken `@io.close` could hang.
 
 ## See Also
 
