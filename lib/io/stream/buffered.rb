@@ -6,6 +6,7 @@
 require_relative "generic"
 require_relative "connection_reset_error"
 
+# Provides buffered IO streams with consistent read, write, and transport semantics.
 module IO::Stream
 	# A buffered stream implementation that wraps an underlying IO object to provide efficient buffered reading and writing.
 	class Buffered < Generic
@@ -102,6 +103,11 @@ module IO::Stream
 		
 		def syswrite(buffer)
 			return @io.write(buffer)
+		end
+		
+		# Attempts to read data from the underlying stream without blocking.
+		def sysread_nonblock(size, buffer)
+			return @io.read_nonblock(size, buffer, exception: false)
 		end
 		
 		# Reads data from the underlying stream as efficiently as possible.

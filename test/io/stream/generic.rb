@@ -20,6 +20,13 @@ describe IO::Stream::Generic do
 		end
 	end
 	
+	with "#peek_partial" do
+		it "should default to no immediately available data" do
+			expect(stream.peek_partial(1)).to be_nil
+			expect(stream).to be(:readable?)
+		end
+	end
+	
 	with "#flush" do
 		it "should raise NotImplementedError" do
 			expect{stream.write("hello"); stream.flush}.to raise_exception(NotImplementedError)

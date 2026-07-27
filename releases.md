@@ -1,5 +1,9 @@
 # Releases
 
+## Unreleased
+
+  - Add `IO::Stream::Readable#peek_partial` to peek through layered transports without blocking or consuming application data.
+
 ## v0.13.1
 
   - Set minimum Ruby verison to 3.3.6 to avoid hanging `close` issue in older Ruby versions.

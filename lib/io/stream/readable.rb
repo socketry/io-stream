@@ -23,7 +23,7 @@ module IO::Stream
 	
 	# A module providing readable stream functionality.
 	#
-	# You must implement the `sysread` method to read data from the underlying IO.
+	# You must implement the `sysread` method to read data from the underlying IO. You may implement `sysread_nonblock` to support non-blocking partial peeks.
 	module Readable
 		ASYNC_SAFE = {
 			read: :readable,
@@ -31,6 +31,7 @@ module IO::Stream
 			read_exactly: :readable,
 			read_until: :readable,
 			peek: :readable,
+			peek_partial: :readable,
 			gets: :readable,
 			getc: :readable,
 			getbyte: :readable,
@@ -246,6 +247,10 @@ module IO::Stream
 		# @parameter size [Integer | Nil] The number of bytes to peek at. If nil, peek at all available data.
 		# @returns [String] The data in the buffer without consuming it.
 		def peek(size = nil)
+			if size == 0
+				return String.new(encoding: Encoding::BINARY)
+			end
+			
 			if size
 				until @finished or @read_buffer.bytesize >= size
 					# Compute the amount of data we need to read from the underlying stream:
@@ -263,6 +268,41 @@ module IO::Stream
 			end
 			
 			return @read_buffer
+		end
+		
+		# Peek at data without consuming it, making at most one non-blocking read attempt.
+		#
+		# Any data read from the underlying stream is preserved in the read buffer. If
+		# the read would block or the stream is at EOF, this method returns `nil`.
+		#
+		# After this method returns `nil`, {readable?} indicates whether the read would
+		# block or EOF was observed.
+		#
+		# @parameter size [Integer] The maximum number of bytes to peek at.
+		# @returns [String | Nil] The immediately available data, or nil if no data can be read without blocking.
+		def peek_partial(size = @minimum_read_size)
+			if size == 0
+				return String.new(encoding: Encoding::BINARY)
+			end
+			
+			if @read_buffer.empty?
+				if @finished
+					return nil
+				end
+				
+				read_size = [size, @maximum_read_size].min
+				
+				result = sysread_nonblock(read_size, @read_buffer)
+				case result
+				when :wait_readable, :wait_writable
+					return nil
+				when nil
+					@finished = true
+					return nil
+				end
+			end
+			
+			return @read_buffer.byteslice(0, [size, @read_buffer.bytesize].min)
 		end
 		
 		# Read a line from the stream, similar to IO#gets.
@@ -359,6 +399,12 @@ module IO::Stream
 		end
 		
 		private
+		
+		# Attempts to read data from the underlying stream without blocking.
+		# Implementations may override this method when non-blocking reads are supported.
+		def sysread_nonblock(size, buffer)
+			return :wait_readable
+		end
 		
 		# Fills the buffer from the underlying stream.
 		def fill_read_buffer(size = @minimum_read_size)
