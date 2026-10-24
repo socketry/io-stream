@@ -5,6 +5,7 @@
 
 require "io/stream/buffered"
 require "tempfile"
+require "objspace"
 
 require "sus/fixtures/async/reactor_context"
 require "sus/fixtures/openssl/verified_certificate_context"
@@ -507,6 +508,13 @@ AUnidirectionalStream = Sus::Shared("a unidirectional stream") do
 		
 		it "with a normal partial_read" do
 			expect(client.read_partial(1).encoding).to be == Encoding::BINARY
+		end
+		
+		it "sizes the returned chunk to the data read" do
+			chunk = client.read_partial
+			
+			expect(chunk.bytesize).to be == 24
+			expect(ObjectSpace.memsize_of(chunk)).to be < 1024
 		end
 		
 		it "with a zero-length partial_read" do

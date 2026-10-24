@@ -21,6 +21,9 @@ module IO::Stream
 	# It is also a multiple of the minimum read size, so that we can read in chunks without exceeding the maximum.
 	MAXIMUM_READ_SIZE = ENV.fetch("IO_STREAM_MAXIMUM_READ_SIZE", MINIMUM_READ_SIZE * 64).to_i
 	
+	# A read that fills at least 1/HANDOVER_RATIO of the input buffer is handed over without a copy, so a chunk holds at most this many times its size. A smaller read is copied out into a string of exactly its size.
+	HANDOVER_RATIO = ENV.fetch("IO_STREAM_HANDOVER_RATIO", 4).to_i
+	
 	# A module providing readable stream functionality.
 	#
 	# You must implement the `sysread` method to read data from the underlying IO. You may implement `sysread_nonblock` to support non-blocking partial peeks.
@@ -60,6 +63,8 @@ module IO::Stream
 			@read_buffer = StringBuffer.new
 			# Used as destination buffer for underlying reads.
 			@input_buffer = StringBuffer.new
+			# The largest read into the input buffer, which its capacity has grown to fit:
+			@input_buffer_size = 0
 			
 			# Support legacy block_size parameter for backwards compatibility
 			@minimum_read_size = block_size || minimum_read_size
@@ -417,21 +422,24 @@ module IO::Stream
 			# This effectively ties the input and output stream together.
 			self.flush
 			
-			if @read_buffer.empty?
-				if sysread(size, @read_buffer)
-					# Console.info(self, name: "read") {@read_buffer.inspect}
-					return true
-				end
-			else
-				if chunk = sysread(size, @input_buffer)
+			# Read into the reused input buffer. A read that mostly fills it is handed over as is, without a copy. A smaller one is copied out, so the read buffer is sized to the data rather than to the read:
+			@input_buffer_size = size if size > @input_buffer_size
+			if chunk = sysread(size, @input_buffer)
+				if !@read_buffer.empty?
 					@read_buffer << chunk
-					# Console.info(self, name: "read") {@read_buffer.inspect}
-					
-					return true
+				elsif chunk.bytesize * HANDOVER_RATIO >= @input_buffer_size
+					@read_buffer = @input_buffer
+					@input_buffer = StringBuffer.new
+					@input_buffer_size = 0
+				else
+					# Appending to an empty string would round its capacity up to as much as twice the data:
+					@read_buffer.bytesplice(0, 0, chunk)
 				end
+				# Console.info(self, name: "read") {@read_buffer.inspect}
+				
+				return true
 			end
 			
-			# else for both cases above:
 			@finished = true
 			return false
 		end
