@@ -24,6 +24,23 @@ describe IO::Stream::Buffered do
 		end
 	end
 	
+	with "plain IO read sizes" do
+		it "does not cap file reads or nonblocking probes to a TLS record" do
+			Tempfile.create("io-stream-read-size") do |file|
+				data = "x".b * (64 * 1024)
+				file.binmode
+				file.write(data)
+				file.rewind
+				stream = IO::Stream::Buffered.wrap(file, minimum_read_size: data.bytesize)
+				
+				expect(stream.read_partial).to be == data
+				file.rewind
+				expect(stream.peek_partial(data.bytesize)).to be == data
+				expect(stream.read_partial).to be == data
+			end
+		end
+	end
+	
 	with ".open" do
 		let(:tempfile) {Tempfile.new("io_stream_buffered_test")}
 		let(:test_file_path) {tempfile.path}
