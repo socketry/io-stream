@@ -10,6 +10,9 @@ require_relative "connection_reset_error"
 module IO::Stream
 	# A buffered stream implementation that wraps an underlying IO object to provide efficient buffered reading and writing.
 	class Buffered < Generic
+		# The most plaintext one TLS record carries, and so the most one `SSL_read` returns. Asking for more only grows the buffer.
+		TLS_RECORD_SIZE = 16 * 1024
+		
 		# Open a file and wrap it in a buffered stream.
 		# @parameter path [String] The file path to open.
 		# @parameter mode [String] The file mode (e.g., "r+", "w", "a").
@@ -55,6 +58,10 @@ module IO::Stream
 			super(...)
 			
 			@io = io
+			if io.is_a?(::OpenSSL::SSL::SSLSocket) and @maximum_read_size > TLS_RECORD_SIZE
+				@maximum_read_size = TLS_RECORD_SIZE
+			end
+			
 			if io.respond_to?(:timeout)
 				@timeout = io.timeout
 			else
